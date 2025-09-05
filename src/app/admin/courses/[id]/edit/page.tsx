@@ -437,7 +437,7 @@ export default function EditCourse() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading course...</p>
         </div>
       </div>
@@ -510,7 +510,7 @@ export default function EditCourse() {
                             setCourseTitle(e.target.value)
                             setHasUnsavedChanges(true)
                           }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white"
                           placeholder="Course title"
                           required
                         />
@@ -527,7 +527,7 @@ export default function EditCourse() {
                               setCourseLevel(e.target.value as 'beginner' | 'intermediate' | 'advanced')
                               setHasUnsavedChanges(true)
                             }}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white"
                           >
                             <option value="beginner">Beginner</option>
                             <option value="intermediate">Intermediate</option>
@@ -545,7 +545,7 @@ export default function EditCourse() {
                               setCourseAccess(e.target.value as 'free' | 'paid')
                               setHasUnsavedChanges(true)
                             }}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white"
                           >
                             <option value="free">Free</option>
                             <option value="paid">Paid</option>
@@ -563,7 +563,7 @@ export default function EditCourse() {
                             setCourseStatus(e.target.value as 'active' | 'deactivated')
                             setHasUnsavedChanges(true)
                           }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white"
                         >
                           <option value="active">Active</option>
                           <option value="deactivated">Deactivated</option>
@@ -585,8 +585,8 @@ export default function EditCourse() {
                         disabled={isSaving}
                         className={`flex-1 px-3 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm ${
                           hasUnsavedChanges 
-                            ? 'bg-orange-500 text-white hover:bg-orange-600' 
-                            : 'bg-yellow-500 text-black hover:bg-yellow-600'
+                            ? 'bg-yellow-700 text-white hover:bg-yellow-800' 
+                            : 'bg-yellow-600 text-white hover:bg-yellow-700'
                         }`}
                       >
                         {isSaving ? 'Saving...' : hasUnsavedChanges ? '⚠️ Save' : 'Save'}
@@ -597,7 +597,7 @@ export default function EditCourse() {
                     <button
                       type="button"
                       onClick={addModule}
-                      className="w-full px-3 py-2 bg-yellow-500 text-black rounded-md font-medium hover:bg-yellow-600 transition-colors text-sm"
+                      className="w-full px-3 py-2 bg-yellow-600 text-white rounded-md font-medium hover:bg-yellow-700 transition-colors text-sm"
                     >
                       + Add New Module
                     </button>
@@ -637,7 +637,7 @@ export default function EditCourse() {
                                 <button
                                   type="button"
                                   onClick={() => addLesson(module.id, 'intro')}
-                                  className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                  className="text-xs px-2 py-1 bg-sky-600 text-white rounded hover:bg-sky-700"
                                   title="Add Intro Lesson"
                                 >
                                   +I
@@ -645,7 +645,7 @@ export default function EditCourse() {
                                 <button
                                   type="button"
                                   onClick={() => addLesson(module.id, 'challenge')}
-                                  className="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                  className="text-xs px-2 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700"
                                   title="Add Challenge Lesson"
                                 >
                                   +C
@@ -653,7 +653,7 @@ export default function EditCourse() {
                                 <button
                                   type="button"
                                   onClick={() => addLesson(module.id, 'quiz')}
-                                  className="text-xs px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
+                                  className="text-xs px-2 py-1 bg-violet-600 text-white rounded hover:bg-violet-700"
                                   title="Add Quiz Lesson"
                                 >
                                   +Q
@@ -662,7 +662,7 @@ export default function EditCourse() {
                                   type="button"
                                   onClick={() => saveModule(module.id)}
                                   disabled={isSavingModule === module.id}
-                                  className="text-xs px-2 py-1 bg-yellow-500 text-black rounded hover:bg-yellow-600 disabled:opacity-50"
+                                  className="text-xs px-2 py-1 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50"
                                   title="Save Module"
                                 >
                                   {isSavingModule === module.id ? '...' : '💾'}
@@ -688,14 +688,14 @@ export default function EditCourse() {
                                       type="text"
                                       value={module.title}
                                       onChange={(e) => updateModule(module.id, 'title', e.target.value)}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white"
                                       placeholder="Module title"
                                     />
                                     <input
                                       type="text"
                                       value={module.description}
                                       onChange={(e) => updateModule(module.id, 'description', e.target.value)}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white"
                                       placeholder="Module description"
                                     />
                                   </div>
@@ -721,9 +721,9 @@ export default function EditCourse() {
                                         >
                                           <div className="flex items-center space-x-2">
                                             <span className={`text-xs font-medium px-2 py-1 rounded text-white ${
-                                              lesson.type === 'intro' ? 'bg-blue-500' :
-                                              lesson.type === 'quiz' ? 'bg-purple-500' :
-                                              'bg-green-500'
+                                              lesson.type === 'intro' ? 'bg-sky-600' :
+                                              lesson.type === 'quiz' ? 'bg-violet-600' :
+                                              'bg-emerald-600'
                                             }`}>
                                               {lesson.type === 'intro' ? 'I' : lesson.type === 'quiz' ? 'Q' : 'C'}
                                             </span>
@@ -764,9 +764,9 @@ export default function EditCourse() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <span className={`text-sm font-medium px-3 py-1 rounded text-white ${
-                              getSelectedLesson()?.type === 'intro' ? 'bg-blue-500' :
-                              getSelectedLesson()?.type === 'quiz' ? 'bg-purple-500' :
-                              'bg-green-500'
+                              getSelectedLesson()?.type === 'intro' ? 'bg-sky-600' :
+                              getSelectedLesson()?.type === 'quiz' ? 'bg-violet-600' :
+                              'bg-emerald-600'
                             }`}>
                               {getSelectedLesson()?.type.toUpperCase()}
                             </span>
@@ -783,7 +783,7 @@ export default function EditCourse() {
                                 }
                               }}
                               disabled={isSavingLesson === selectedLesson?.lessonId}
-                              className="px-3 py-1 bg-green-500 text-white rounded text-sm font-medium hover:bg-green-600 disabled:opacity-50"
+                              className="px-3 py-1 bg-emerald-600 text-white rounded text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
                             >
                               {isSavingLesson === selectedLesson?.lessonId ? 'Saving...' : '💾 Save Lesson'}
                             </button>
@@ -795,7 +795,7 @@ export default function EditCourse() {
                                   addLesson(module.id, getSelectedLesson()?.type || 'intro')
                                 }
                               }}
-                              className="px-3 py-1 bg-yellow-500 text-black rounded text-sm font-medium hover:bg-yellow-600"
+                              className="px-3 py-1 bg-amber-500 text-white rounded text-sm font-medium hover:bg-amber-600"
                             >
                               + Add Similar Lesson
                             </button>
@@ -832,7 +832,7 @@ export default function EditCourse() {
                                     updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'title', e.target.value)
                                   }
                                 }}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white"
                                 placeholder="Enter lesson title"
                                 required
                               />
@@ -853,7 +853,7 @@ export default function EditCourse() {
                                   }}
                                   rows={12}
                                   maxLength={5000}
-                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
                                   placeholder="Write your introduction content in Markdown format..."
                                 />
                                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -876,7 +876,7 @@ export default function EditCourse() {
                                   }}
                                   rows={10}
                                   maxLength={3000}
-                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
                                   placeholder="Write your quiz questions in Markdown format..."
                                 />
                                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -900,7 +900,7 @@ export default function EditCourse() {
                                     }}
                                     rows={6}
                                     maxLength={2000}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
                                     placeholder="Write the challenge instructions in Markdown format..."
                                   />
                                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -920,7 +920,7 @@ export default function EditCourse() {
                                       }
                                     }}
                                     rows={10}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
                                     placeholder="// Initial code template for students..."
                                   />
                                 </div>
@@ -937,7 +937,7 @@ export default function EditCourse() {
                                       }
                                     }}
                                     rows={10}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
                                     placeholder="// Complete solution code..."
                                   />
                                 </div>
@@ -954,7 +954,7 @@ export default function EditCourse() {
                                       }
                                     }}
                                     rows={8}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
                                     placeholder="// Test cases for the contract..."
                                   />
                                 </div>
