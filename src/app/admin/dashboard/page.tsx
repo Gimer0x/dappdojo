@@ -215,9 +215,9 @@ export default function AdminDashboard() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Start building a new learning path with modules and lessons
               </p>
-              <button className="w-full bg-yellow-500 text-black px-4 py-2 rounded-md font-medium hover:bg-yellow-600 transition-colors">
-                Coming Soon
-              </button>
+              <Link href="/admin/courses/create" className="block w-full bg-yellow-500 text-black px-4 py-2 rounded-md font-medium hover:bg-yellow-600 transition-colors text-center">
+                Create Course
+              </Link>
             </div>
 
             {/* Manage Courses */}
@@ -231,9 +231,9 @@ export default function AdminDashboard() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Edit existing courses, add modules, and update content
               </p>
-              <button className="w-full bg-blue-500 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-600 transition-colors">
-                Coming Soon
-              </button>
+              <Link href="/admin/courses" className="block w-full bg-blue-500 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-600 transition-colors text-center">
+                Manage Courses
+              </Link>
             </div>
 
             {/* Student Analytics */}
