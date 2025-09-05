@@ -18,10 +18,16 @@ export default function Home() {
             <nav className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
                 <Link 
-                  href="/admin/login" 
+                  href="/courses" 
                   className="text-white hover:text-yellow-500 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                 >
-                  Admin Login
+                  Browse Courses
+                </Link>
+                <Link 
+                  href="/about" 
+                  className="text-white hover:text-yellow-500 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  About
                 </Link>
               </div>
             </nav>
@@ -56,7 +62,7 @@ export default function Home() {
                 Login and get premium access for $19.99
               </p>
               <Link
-                href="/admin/login"
+                href="/courses"
                 className="inline-block bg-yellow-500 text-black px-8 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors"
               >
                 Get Started

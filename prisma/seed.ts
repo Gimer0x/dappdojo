@@ -8,7 +8,7 @@ async function main() {
 
   // Create admin user
   const adminEmail = 'gimer@dappdojo.com'
-  const adminPassword = 'admin'
+  const adminPassword = 'Admin123!' // Stronger default password
   
   // Check if admin user already exists
   const existingAdmin = await prisma.user.findUnique({
@@ -30,7 +30,15 @@ async function main() {
     
     console.log('✅ Admin user created:', adminUser.email)
   } else {
-    console.log('ℹ️ Admin user already exists:', existingAdmin.email)
+    // Update existing admin user's password to ensure it's properly hashed
+    const hashedPassword = await hashPassword(adminPassword)
+    
+    await prisma.user.update({
+      where: { email: adminEmail },
+      data: { password: hashedPassword }
+    })
+    
+    console.log('✅ Admin user password updated:', existingAdmin.email)
   }
 
   console.log('🎉 Database seeding completed!')

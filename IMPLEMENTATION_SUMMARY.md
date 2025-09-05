@@ -83,7 +83,7 @@ Successfully implemented the **DappDojo Web3 Learning Platform** with a focus on
 ## 🔐 Default Admin Access
 
 - **Email**: gimer@dappdojo.com
-- **Password**: admin
+- **Password**: Admin123!
 - **Access Level**: Full admin privileges
 - **Security Note**: Password should be changed after first login
 

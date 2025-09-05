@@ -1,18 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generatePasswordResetToken } from '@/lib/auth'
-import { createMockEmailService } from '@/lib/email'
+import { createDevEmailService } from '@/lib/email'
+import { forgotPasswordSchema, RateLimiter } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json()
-
-    if (!email) {
+    // Rate limiting for password reset requests
+    const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
+    const rateLimiter = new RateLimiter(3, 60 * 60 * 1000) // 3 attempts per hour
+    
+    if (!rateLimiter.isAllowed(clientIP)) {
       return NextResponse.json(
-        { error: 'Email is required' },
+        { error: 'Too many password reset requests. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
+    const body = await request.json()
+    
+    // Validate input schema
+    const validationResult = forgotPasswordSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
         { status: 400 }
       )
     }
+
+    const { email } = validationResult.data
 
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -38,7 +54,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Send reset email
-    const emailService = createMockEmailService()
+    const emailService = createDevEmailService()
     const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password`
     
     const emailSent = await emailService.sendPasswordResetEmail(
@@ -48,9 +64,18 @@ export async function POST(request: NextRequest) {
     )
 
     if (emailSent) {
-      return NextResponse.json({ 
-        message: 'If an account exists, a password reset email has been sent' 
-      })
+      // In development mode, return the reset token for testing
+      if (process.env.NODE_ENV === 'development') {
+        return NextResponse.json({ 
+          message: 'Password reset email sent successfully!',
+          resetToken: resetToken, // Only in development
+          resetUrl: resetUrl
+        })
+      } else {
+        return NextResponse.json({ 
+          message: 'If an account exists, a password reset email has been sent' 
+        })
+      }
     } else {
       return NextResponse.json(
         { error: 'Failed to send reset email' },

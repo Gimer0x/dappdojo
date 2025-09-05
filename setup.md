@@ -66,7 +66,7 @@ npm run dev
 
 - **URL**: http://localhost:3000/admin/login
 - **Email**: gimer@dappdojo.com
-- **Password**: admin
+- **Password**: Admin123!
 
 ## 📱 Available Routes
 

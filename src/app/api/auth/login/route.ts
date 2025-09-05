@@ -1,17 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, generateToken } from '@/lib/auth'
+import { loginSchema, RateLimiter } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
-
-    if (!email || !password) {
+    // Rate limiting
+    const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
+    const rateLimiter = new RateLimiter(5, 15 * 60 * 1000) // 5 attempts per 15 minutes
+    
+    if (!rateLimiter.isAllowed(clientIP)) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Too many login attempts. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
+    const body = await request.json()
+    
+    // Validate input schema
+    const validationResult = loginSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid input data' },
         { status: 400 }
       )
     }
+
+    const { email, password } = validationResult.data
 
     // Find user by email
     const user = await prisma.user.findUnique({

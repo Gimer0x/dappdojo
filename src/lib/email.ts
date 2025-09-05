@@ -76,3 +76,31 @@ export const createMockEmailService = (): EmailService => {
     pass: 'mock-password',
   })
 }
+
+// Create a development email service that simulates email sending
+export class DevEmailService extends EmailService {
+  constructor() {
+    super({
+      host: 'localhost',
+      port: 1025,
+      user: 'dev@dappdojo.com',
+      pass: 'dev-password',
+    })
+  }
+
+  async sendEmail(): Promise<boolean> {
+    // Simulate email sending delay
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    return true
+  }
+
+  async sendPasswordResetEmail(): Promise<boolean> {
+    // Simulate email sending delay
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    return true
+  }
+}
+
+export const createDevEmailService = (): EmailService => {
+  return new DevEmailService()
+}

@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, hashPassword, verifyToken } from '@/lib/auth'
+import { passwordChangeSchema } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
-    const { currentPassword, newPassword } = await request.json()
-
-    if (!currentPassword || !newPassword) {
+    const body = await request.json()
+    
+    // Validate input schema
+    const validationResult = passwordChangeSchema.safeParse(body)
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Current password and new password are required' },
+        { error: 'Invalid input data' },
         { status: 400 }
       )
     }
+
+    const { currentPassword, newPassword } = validationResult.data
 
     // Get authorization header
     const authHeader = request.headers.get('authorization')

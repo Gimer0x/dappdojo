@@ -96,7 +96,7 @@ The application will be available at `http://localhost:3000`
 ## 🔐 Default Admin Credentials
 
 - **Email**: gimer@dappdojo.com
-- **Password**: admin
+- **Password**: Admin123!
 
 ⚠️ **Important**: Change the default password after first login!
 

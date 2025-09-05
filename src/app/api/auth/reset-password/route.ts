@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth'
+import { passwordResetSchema } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
-    const { token, newPassword } = await request.json()
-
-    if (!token || !newPassword) {
+    const body = await request.json()
+    
+    // Validate input schema
+    const validationResult = passwordResetSchema.safeParse(body)
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Token and new password are required' },
+        { error: 'Invalid input data' },
         { status: 400 }
       )
     }
+
+    const { token, newPassword } = validationResult.data
 
     // Find valid reset token
     const resetRecord = await prisma.passwordReset.findFirst({
