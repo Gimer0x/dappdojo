@@ -294,12 +294,6 @@ export default function CoursesList() {
                       </div>
                     </div>
 
-                    {course.goals && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                        {course.goals}
-                      </p>
-                    )}
-
                     <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
                       <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 mb-3">
                         <span>Modules: {course.modules.length}</span>
