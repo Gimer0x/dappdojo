@@ -11,6 +11,28 @@ interface User {
   role: string
 }
 
+interface Course {
+  id: string
+  title: string
+  status: string
+  level: string
+  access: string
+  createdAt: string
+  modules: Array<{
+    id: string
+    lessons: Array<{
+      id: string
+    }>
+  }>
+}
+
+interface DashboardStats {
+  totalCourses: number
+  activeCourses: number
+  totalModules: number
+  totalLessons: number
+}
+
 export default function AdminDashboard() {
   const [user, setUser] = useState<User | null>(null)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
@@ -23,6 +45,14 @@ export default function AdminDashboard() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [stats, setStats] = useState<DashboardStats>({
+    totalCourses: 0,
+    activeCourses: 0,
+    totalModules: 0,
+    totalLessons: 0
+  })
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
+  const [recentCourses, setRecentCourses] = useState<Course[]>([])
   
   const router = useRouter()
 
@@ -43,6 +73,55 @@ export default function AdminDashboard() {
       router.push('/admin/login')
     }
   }, [router])
+
+  // Fetch course statistics
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) return
+
+        const response = await fetch('/api/courses', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const courses: Course[] = data.courses || []
+          
+          const totalCourses = courses.length
+          const activeCourses = courses.filter(course => course.status.toLowerCase() === 'active').length
+          const totalModules = courses.reduce((sum, course) => sum + course.modules.length, 0)
+          const totalLessons = courses.reduce((sum, course) => 
+            sum + course.modules.reduce((moduleSum, module) => moduleSum + module.lessons.length, 0), 0
+          )
+
+          setStats({
+            totalCourses,
+            activeCourses,
+            totalModules,
+            totalLessons
+          })
+
+          // Set recent courses (last 3 created)
+          const sortedCourses = courses
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 3)
+          setRecentCourses(sortedCourses)
+        }
+      } catch (error) {
+        console.error('Error fetching course stats:', error)
+      } finally {
+        setIsLoadingStats(false)
+      }
+    }
+
+    if (user) {
+      fetchStats()
+    }
+  }, [user])
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -172,31 +251,72 @@ export default function AdminDashboard() {
               Manage courses, modules, and track student progress from this centralized dashboard.
             </p>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Quick Stats */}
               <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
                   Total Courses
                 </h3>
-                <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">0</p>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">No courses created yet</p>
+                {isLoadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-yellow-200 dark:bg-yellow-800 rounded mb-2"></div>
+                    <div className="h-4 bg-yellow-200 dark:bg-yellow-800 rounded w-3/4"></div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.totalCourses}</p>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      {stats.totalCourses === 0 ? 'No courses created yet' : `${stats.activeCourses} active`}
+                    </p>
+                  </>
+                )}
               </div>
               
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
-                  Active Students
+                  Total Modules
                 </h3>
-                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">0</p>
-                <p className="text-sm text-blue-700 dark:text-blue-300">No students enrolled yet</p>
+                {isLoadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-blue-200 dark:bg-blue-800 rounded mb-2"></div>
+                    <div className="h-4 bg-blue-200 dark:bg-blue-800 rounded w-3/4"></div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.totalModules}</p>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      {stats.totalModules === 0 ? 'No modules created yet' : 'Across all courses'}
+                    </p>
+                  </>
+                )}
               </div>
               
-                          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
-                Security Status
-              </h3>
-              <p className="text-3xl font-bold text-green-600 dark:text-green-400">🛡️</p>
-              <p className="text-sm text-green-700 dark:text-green-300">All security measures active</p>
-            </div>
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-2">
+                  Total Lessons
+                </h3>
+                {isLoadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-purple-200 dark:bg-purple-800 rounded mb-2"></div>
+                    <div className="h-4 bg-purple-200 dark:bg-purple-800 rounded w-3/4"></div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.totalLessons}</p>
+                    <p className="text-sm text-purple-700 dark:text-purple-300">
+                      {stats.totalLessons === 0 ? 'No lessons created yet' : 'Including quizzes & challenges'}
+                    </p>
+                  </>
+                )}
+              </div>
+              
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">
+                  Security Status
+                </h3>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">🛡️</p>
+                <p className="text-sm text-green-700 dark:text-green-300">All security measures active</p>
+              </div>
             </div>
           </div>
         </div>
@@ -258,14 +378,53 @@ export default function AdminDashboard() {
         <div className="px-4 py-6 sm:px-0">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Recent Activity
+              Recent Courses
             </h3>
-            <div className="text-center py-8">
-              <div className="text-gray-400 text-6xl mb-4">📝</div>
-              <p className="text-gray-500 dark:text-gray-400">
-                No recent activity. Start by creating your first course!
-              </p>
-            </div>
+            {isLoadingStats ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : recentCourses.length > 0 ? (
+              <div className="space-y-4">
+                {recentCourses.map((course) => (
+                  <div key={course.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900 dark:text-white">{course.title}</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {course.level} • {course.access} • {course.modules.length} modules
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        course.status.toLowerCase() === 'active' 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
+                      }`}>
+                        {course.status}
+                      </span>
+                      <Link 
+                        href={`/admin/courses/${course.id}/edit`}
+                        className="text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 text-sm font-medium"
+                      >
+                        Edit
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-400 text-6xl mb-4">📝</div>
+                <p className="text-gray-500 dark:text-gray-400">
+                  No courses created yet. Start by creating your first course!
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </main>
