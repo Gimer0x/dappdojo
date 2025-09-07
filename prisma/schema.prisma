@@ -32,13 +32,14 @@ model User {
 }
 
 model Course {
-  id       String   @id @default(cuid())
-  title    String
-  language String   @default("Solidity")
-  goals    String
-  level    CourseLevel
-  access   CourseAccess
-  status   CourseStatus @default(ACTIVE)
+  id        String   @id @default(cuid())
+  title     String
+  language  String   @default("Solidity")
+  goals     String
+  level     CourseLevel
+  access    CourseAccess
+  status    CourseStatus @default(ACTIVE)
+  thumbnail String?  // Path to thumbnail image
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

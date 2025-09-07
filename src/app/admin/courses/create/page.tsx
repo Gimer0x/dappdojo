@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ImageUpload from '@/components/ImageUpload'
 
 interface User {
   id: string
@@ -25,6 +26,9 @@ export default function CreateCourse() {
   const [courseLevel, setCourseLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner')
   const [courseAccess, setCourseAccess] = useState<'free' | 'paid'>('free')
   const [courseStatus, setCourseStatus] = useState<'active' | 'deactivated'>('active')
+  const [courseThumbnail, setCourseThumbnail] = useState<string | null>(null)
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
+  const [thumbnailError, setThumbnailError] = useState<string | null>(null)
   
   const router = useRouter()
 
@@ -47,6 +51,42 @@ export default function CreateCourse() {
       return
     }
   }, [router])
+
+  const handleThumbnailSelect = async (file: File | null) => {
+    setThumbnailError(null)
+    
+    if (!file) {
+      setThumbnailFile(null)
+      setCourseThumbnail(null)
+      return
+    }
+
+    setThumbnailFile(file)
+    
+    try {
+      const token = localStorage.getItem('token')
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload/thumbnail', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setCourseThumbnail(data.url)
+      } else {
+        setThumbnailError(data.error || 'Failed to upload thumbnail')
+      }
+    } catch (error) {
+      setThumbnailError('Failed to upload thumbnail')
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -82,6 +122,7 @@ export default function CreateCourse() {
           level: courseLevel,
           access: courseAccess,
           status: courseStatus,
+          thumbnail: courseThumbnail,
           modules: [] // Start with no modules
         }),
       })
@@ -250,6 +291,18 @@ export default function CreateCourse() {
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-600 dark:text-white"
                       placeholder="Describe what students will learn in this course..."
                       required
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Course Thumbnail
+                    </label>
+                    <ImageUpload
+                      onImageSelect={handleThumbnailSelect}
+                      currentImage={courseThumbnail}
+                      error={thumbnailError}
+                      disabled={isCreating}
                     />
                   </div>
                 </div>

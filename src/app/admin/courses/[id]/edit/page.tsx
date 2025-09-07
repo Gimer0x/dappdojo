@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import ImageUpload from '@/components/ImageUpload'
 
 interface User {
   id: string
@@ -39,6 +40,7 @@ interface Course {
   level: string
   access: string
   status: string
+  thumbnail: string | null
   modules: Module[]
 }
 
@@ -54,6 +56,8 @@ export default function EditCourse() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isSavingModule, setIsSavingModule] = useState<string | null>(null)
   const [isSavingLesson, setIsSavingLesson] = useState<string | null>(null)
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(true)
+  const [activeTab, setActiveTab] = useState<'instructions' | 'initialCode' | 'solutionCode' | 'tests'>('instructions')
   
   // Course metadata
   const [courseTitle, setCourseTitle] = useState('')
@@ -62,6 +66,8 @@ export default function EditCourse() {
   const [courseLevel, setCourseLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner')
   const [courseAccess, setCourseAccess] = useState<'free' | 'paid'>('free')
   const [courseStatus, setCourseStatus] = useState<'active' | 'deactivated'>('active')
+  const [courseThumbnail, setCourseThumbnail] = useState<string | null>(null)
+  const [thumbnailError, setThumbnailError] = useState<string | null>(null)
   
   // Modules
   const [modules, setModules] = useState<Module[]>([])
@@ -75,6 +81,10 @@ export default function EditCourse() {
       newCollapsed.add(moduleId)
     }
     setCollapsedModules(newCollapsed)
+  }
+
+  const toggleHeaderCollapse = () => {
+    setIsHeaderCollapsed(!isHeaderCollapsed)
   }
 
   const selectLesson = (moduleId: string, lessonId: string) => {
@@ -114,6 +124,7 @@ export default function EditCourse() {
           level: courseLevel,
           access: courseAccess,
           status: courseStatus,
+          thumbnail: courseThumbnail,
           modules
         }),
       })
@@ -155,6 +166,7 @@ export default function EditCourse() {
           level: courseLevel,
           access: courseAccess,
           status: courseStatus,
+          thumbnail: courseThumbnail,
           modules
         }),
       })
@@ -225,6 +237,7 @@ export default function EditCourse() {
         setCourseLevel(courseData.level.toLowerCase())
         setCourseAccess(courseData.access.toLowerCase())
         setCourseStatus(courseData.status.toLowerCase())
+        setCourseThumbnail(courseData.thumbnail || null)
         
         // Process modules and lessons to ensure proper format
         const processedModules = (courseData.modules || []).map(module => ({
@@ -255,7 +268,7 @@ export default function EditCourse() {
   const addModule = () => {
     const newModule: Module = {
       id: `module-${Date.now()}`,
-      title: '',
+      title: `Module ${modules.length + 1}`,
       description: '',
       order: modules.length + 1,
       lessons: []
@@ -297,10 +310,16 @@ export default function EditCourse() {
     const module = modules.find(m => m.id === moduleId)
     if (!module) return
 
+    const lessonTypeNames = {
+      intro: 'Introduction',
+      quiz: 'Quiz',
+      challenge: 'Challenge'
+    }
+
     const newLesson: Lesson = {
       id: `lesson-${Date.now()}`,
       type,
-      title: '',
+      title: `${lessonTypeNames[type]} ${module.lessons.length + 1}`,
       contentMarkdown: '',
       initialCode: '',
       solutionCode: '',
@@ -361,6 +380,41 @@ export default function EditCourse() {
     setHasUnsavedChanges(true)
   }
 
+  const handleThumbnailSelect = async (file: File | null) => {
+    setThumbnailError(null)
+    
+    if (!file) {
+      setCourseThumbnail(null)
+      setHasUnsavedChanges(true)
+      return
+    }
+    
+    try {
+      const token = localStorage.getItem('token')
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload/thumbnail', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setCourseThumbnail(data.url)
+        setHasUnsavedChanges(true)
+      } else {
+        setThumbnailError(data.error || 'Failed to upload thumbnail')
+      }
+    } catch (error) {
+      setThumbnailError('Failed to upload thumbnail')
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -383,6 +437,15 @@ export default function EditCourse() {
         setMessageType('error')
         return
       }
+      
+      // Validate lessons within each module
+      for (const lesson of module.lessons) {
+        if (!lesson.title.trim()) {
+          setMessage(`Lesson title is required in Module ${modules.indexOf(module) + 1}`)
+          setMessageType('error')
+          return
+        }
+      }
     }
 
     setIsSaving(true)
@@ -399,6 +462,7 @@ export default function EditCourse() {
         level: courseLevel,
         access: courseAccess,
         status: courseStatus,
+        thumbnail: courseThumbnail,
         modules
       }
       console.log('Sending data:', JSON.stringify(requestData, null, 2))
@@ -489,16 +553,30 @@ export default function EditCourse() {
             )}
 
             <form id="course-form" onSubmit={handleSubmit} className="h-full">
-              <div className="flex h-[calc(100vh-200px)]">
+              <div className="flex h-[calc(100vh-180px)]">
                 {/* Left Sidebar - Tree Navigation */}
-                <div className="w-1/3 border-r border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-                  <div className="p-4 border-b border-gray-300 dark:border-gray-600">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Course Structure
-                    </h3>
+                <div className="w-1/3 border-r border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 flex flex-col">
+                  <div className="border-b border-gray-300 dark:border-gray-600 flex-shrink-0">
+                    {/* Header Toggle */}
+                    <div className="p-3 border-b border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          Course Structure
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={toggleHeaderCollapse}
+                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
+                        >
+                          {isHeaderCollapsed ? '▼' : '▲'} {isHeaderCollapsed ? 'Show' : 'Hide'} Details
+                        </button>
+                      </div>
+                    </div>
                     
-                    {/* Course Metadata */}
-                    <div className="space-y-3 mb-6">
+                    {/* Course Metadata - Collapsible */}
+                    {!isHeaderCollapsed && (
+                      <div className="p-3">
+                        <div className="space-y-2 mb-4">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Course Title
@@ -571,6 +649,19 @@ export default function EditCourse() {
                       </div>
                     </div>
 
+                    {/* Thumbnail Upload */}
+                    <div className="mb-4">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Course Thumbnail
+                      </label>
+                      <ImageUpload
+                        onImageSelect={handleThumbnailSelect}
+                        currentImage={courseThumbnail}
+                        error={thumbnailError}
+                        disabled={isSaving}
+                      />
+                    </div>
+
                     {/* Action Buttons */}
                     <div className="flex space-x-2 mb-3">
                       <Link
@@ -593,7 +684,12 @@ export default function EditCourse() {
                       </button>
                     </div>
 
-                    {/* Add Module Button */}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Add Module Button - Always Visible */}
+                  <div className="p-3 border-b border-gray-300 dark:border-gray-600 flex-shrink-0">
                     <button
                       type="button"
                       onClick={addModule}
@@ -604,7 +700,7 @@ export default function EditCourse() {
                   </div>
 
                   {/* Tree Navigation */}
-                  <div className="p-4 overflow-y-auto h-full">
+                  <div className="p-3 overflow-y-auto flex-1 min-h-0">
                     {modules.length === 0 ? (
                       <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                         <div className="mb-4">
@@ -682,8 +778,8 @@ export default function EditCourse() {
                             {!collapsedModules.has(module.id) && (
                               <div className="bg-gray-50 dark:bg-gray-800">
                                 {/* Module Info */}
-                                <div className="p-3 border-b border-gray-200 dark:border-gray-600">
-                                  <div className="space-y-2">
+                                <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+                                  <div className="space-y-1">
                                     <input
                                       type="text"
                                       value={module.title}
@@ -702,7 +798,7 @@ export default function EditCourse() {
                                 </div>
 
                                 {/* Lessons */}
-                                <div className="p-2">
+                                <div className="p-1">
                                   {module.lessons.length === 0 ? (
                                     <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
                                       No lessons yet
@@ -886,77 +982,110 @@ export default function EditCourse() {
                             )}
 
                             {getSelectedLesson()?.type === 'challenge' && (
-                              <div className="space-y-6">
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Instructions (Markdown) *
-                                  </label>
-                                  <textarea
-                                    value={getSelectedLesson()?.contentMarkdown || ''}
-                                    onChange={(e) => {
-                                      if (selectedLesson) {
-                                        updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'contentMarkdown', e.target.value)
-                                      }
-                                    }}
-                                    rows={6}
-                                    maxLength={2000}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
-                                    placeholder="Write the challenge instructions in Markdown format..."
-                                  />
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    {(getSelectedLesson()?.contentMarkdown?.length || 0)}/2000 characters
-                                  </div>
+                              <div className="space-y-4">
+                                {/* Tab Navigation */}
+                                <div className="border-b border-gray-200 dark:border-gray-600">
+                                  <nav className="-mb-px flex space-x-8">
+                                    {[
+                                      { id: 'instructions', label: 'Instructions', icon: '📝' },
+                                      { id: 'initialCode', label: 'Initial Code', icon: '💻' },
+                                      { id: 'solutionCode', label: 'Solution Code', icon: '✅' },
+                                      { id: 'tests', label: 'Test Cases', icon: '🧪' }
+                                    ].map((tab) => (
+                                      <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setActiveTab(tab.id as any)}
+                                        className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                                          activeTab === tab.id
+                                            ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                        }`}
+                                      >
+                                        <span className="mr-2">{tab.icon}</span>
+                                        {tab.label}
+                                      </button>
+                                    ))}
+                                  </nav>
                                 </div>
 
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Initial Code (Solidity) *
-                                  </label>
-                                  <textarea
-                                    value={getSelectedLesson()?.initialCode || ''}
-                                    onChange={(e) => {
-                                      if (selectedLesson) {
-                                        updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'initialCode', e.target.value)
-                                      }
-                                    }}
-                                    rows={10}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
-                                    placeholder="// Initial code template for students..."
-                                  />
-                                </div>
+                                {/* Tab Content */}
+                                <div className="h-[calc(100vh-400px)]">
+                                  {activeTab === 'instructions' && (
+                                    <div className="h-full">
+                                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Instructions (Markdown) *
+                                      </label>
+                                      <textarea
+                                        value={getSelectedLesson()?.contentMarkdown || ''}
+                                        onChange={(e) => {
+                                          if (selectedLesson) {
+                                            updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'contentMarkdown', e.target.value)
+                                          }
+                                        }}
+                                        maxLength={2000}
+                                        className="w-full h-[calc(100%-40px)] px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
+                                        placeholder="Write the challenge instructions in Markdown format..."
+                                      />
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        {(getSelectedLesson()?.contentMarkdown?.length || 0)}/2000 characters
+                                      </div>
+                                    </div>
+                                  )}
 
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Solution Code (Solidity) *
-                                  </label>
-                                  <textarea
-                                    value={getSelectedLesson()?.solutionCode || ''}
-                                    onChange={(e) => {
-                                      if (selectedLesson) {
-                                        updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'solutionCode', e.target.value)
-                                      }
-                                    }}
-                                    rows={10}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
-                                    placeholder="// Complete solution code..."
-                                  />
-                                </div>
+                                  {activeTab === 'initialCode' && (
+                                    <div className="h-full">
+                                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Initial Code (Solidity) *
+                                      </label>
+                                      <textarea
+                                        value={getSelectedLesson()?.initialCode || ''}
+                                        onChange={(e) => {
+                                          if (selectedLesson) {
+                                            updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'initialCode', e.target.value)
+                                          }
+                                        }}
+                                        className="w-full h-[calc(100%-40px)] px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
+                                        placeholder="// Initial code template for students..."
+                                      />
+                                    </div>
+                                  )}
 
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Test Cases (Solidity) *
-                                  </label>
-                                  <textarea
-                                    value={getSelectedLesson()?.tests || ''}
-                                    onChange={(e) => {
-                                      if (selectedLesson) {
-                                        updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'tests', e.target.value)
-                                      }
-                                    }}
-                                    rows={8}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
-                                    placeholder="// Test cases for the contract..."
-                                  />
+                                  {activeTab === 'solutionCode' && (
+                                    <div className="h-full">
+                                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Solution Code (Solidity) *
+                                      </label>
+                                      <textarea
+                                        value={getSelectedLesson()?.solutionCode || ''}
+                                        onChange={(e) => {
+                                          if (selectedLesson) {
+                                            updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'solutionCode', e.target.value)
+                                          }
+                                        }}
+                                        className="w-full h-[calc(100%-40px)] px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
+                                        placeholder="// Complete solution code..."
+                                      />
+                                    </div>
+                                  )}
+
+                                  {activeTab === 'tests' && (
+                                    <div className="h-full">
+                                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Test Cases (Solidity) *
+                                      </label>
+                                      <textarea
+                                        value={getSelectedLesson()?.tests || ''}
+                                        onChange={(e) => {
+                                          if (selectedLesson) {
+                                            updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'tests', e.target.value)
+                                          }
+                                        }}
+                                        className="w-full h-[calc(100%-40px)] px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
+                                        placeholder="// Test cases for the contract..."
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )}

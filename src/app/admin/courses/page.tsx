@@ -34,6 +34,7 @@ interface Course {
   level: string
   access: string
   status: string
+  thumbnail: string | null
   createdAt: string
   modules: Module[]
   _count: {
@@ -259,65 +260,75 @@ export default function CoursesList() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => (
-                  <div key={course.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {course.title}
-                      </h3>
-                      <div className="flex space-x-2">
+                  <div key={course.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+                    {/* Thumbnail */}
+                    <div className="relative h-48 bg-gray-200 dark:bg-gray-700">
+                      <img
+                        src={course.thumbnail || '/uploads/thumbnails/placeholder.svg'}
+                        alt={course.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-3 right-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(course.status)}`}>
                           {course.status.toLowerCase()}
                         </span>
                       </div>
                     </div>
 
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Language:</span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">
-                          {course.language}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Level:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(course.level)}`}>
-                          {course.level.toLowerCase()}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Access:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAccessColor(course.access)}`}>
-                          {course.access.toLowerCase()}
-                        </span>
-                      </div>
-                    </div>
+                    {/* Content */}
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 line-clamp-2">
+                        {course.title}
+                      </h3>
 
-                    <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-                      <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        <span>Modules: {course.modules.length}</span>
-                        <span>Lessons: {course.modules.reduce((total, module) => total + module.lessons.length, 0)}</span>
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Language:</span>
+                          <span className="font-medium text-gray-900 dark:text-white capitalize">
+                            {course.language}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Level:</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(course.level)}`}>
+                            {course.level.toLowerCase()}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Access:</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAccessColor(course.access)}`}>
+                            {course.access.toLowerCase()}
+                          </span>
+                        </div>
                       </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500 dark:text-gray-500">
-                          Created: {new Date(course.createdAt).toLocaleDateString()}
-                        </span>
-                        <div className="flex space-x-2">
-                          <Link
-                            href={`/admin/courses/${course.id}/edit`}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            Edit
-                          </Link>
-                          <button 
-                            onClick={() => handleDeleteCourse(course.id, course.title)}
-                            disabled={deletingCourseId === course.id}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50"
-                          >
-                            {deletingCourseId === course.id ? 'Deleting...' : 'Delete'}
-                          </button>
+
+                      <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
+                        <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          <span>📚 {course.modules.length} modules</span>
+                          <span>📝 {course.modules.reduce((total, module) => total + module.lessons.length, 0)} lessons</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-500">
+                            {new Date(course.createdAt).toLocaleDateString()}
+                          </span>
+                          <div className="flex space-x-2">
+                            <Link
+                              href={`/admin/courses/${course.id}/edit`}
+                              className="text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 text-sm font-medium"
+                            >
+                              Edit
+                            </Link>
+                            <button 
+                              onClick={() => handleDeleteCourse(course.id, course.title)}
+                              disabled={deletingCourseId === course.id}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50"
+                            >
+                              {deletingCourseId === course.id ? 'Deleting...' : 'Delete'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

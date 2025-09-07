@@ -11,6 +11,7 @@ const updateCourseSchema = z.object({
   level: z.enum(['beginner', 'intermediate', 'advanced']),
   access: z.enum(['free', 'paid']),
   status: z.enum(['active', 'deactivated']),
+  thumbnail: z.string().optional(),
   modules: z.array(z.object({
     id: z.string(),
     title: z.string().min(1, 'Module title is required'),
@@ -140,6 +141,7 @@ export async function PUT(
         level: validatedData.level.toUpperCase() as any,
         access: validatedData.access.toUpperCase() as any,
         status: validatedData.status.toUpperCase() as any,
+        thumbnail: validatedData.thumbnail || null,
         modules: {
           create: validatedData.modules.map((module) => ({
             title: module.title,
