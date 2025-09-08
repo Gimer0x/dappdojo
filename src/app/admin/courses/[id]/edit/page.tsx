@@ -109,6 +109,15 @@ export default function EditCourse() {
     return modules.find(m => m.id === selectedLesson.moduleId) || null
   }
 
+  // Helper function to get lesson number within a module (starts from 1 per module)
+  const getModuleLessonNumber = (targetModuleId: string, targetLessonId: string) => {
+    const module = modules.find(m => m.id === targetModuleId)
+    if (!module) return 0
+    
+    const lessonIndex = module.lessons.findIndex(l => l.id === targetLessonId)
+    return lessonIndex + 1
+  }
+
   // Drag and drop helper functions
   const handleLessonDragStart = (e: React.DragEvent, moduleId: string, lessonId: string) => {
     setDraggedLesson({ moduleId, lessonId })
@@ -981,6 +990,9 @@ export default function EditCourse() {
                                             onClick={() => selectLesson(module.id, lesson.id)}
                                           >
                                             <div className="flex items-center space-x-2">
+                                              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 min-w-[20px]">
+                                                {getModuleLessonNumber(module.id, lesson.id)}.
+                                              </span>
                                               <span className="text-gray-400 dark:text-gray-500 cursor-move mr-1">⋮⋮</span>
                                               <span className={`text-xs font-medium px-2 py-1 rounded text-white ${
                                                 lesson.type === 'intro' ? 'bg-sky-600' :
@@ -990,7 +1002,7 @@ export default function EditCourse() {
                                                 {lesson.type === 'intro' ? 'I' : lesson.type === 'quiz' ? 'Q' : 'C'}
                                               </span>
                                               <span className="text-sm text-gray-700 dark:text-gray-300">
-                                                {lesson.title || `Lesson ${lessonIndex + 1}`}
+                                                {lesson.title || `${lesson.type.charAt(0).toUpperCase() + lesson.type.slice(1)} ${lessonIndex + 1}`}
                                               </span>
                                             </div>
                                             <button
@@ -1042,6 +1054,9 @@ export default function EditCourse() {
                       <div className="p-4 border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                              {selectedLesson ? getModuleLessonNumber(selectedLesson.moduleId, selectedLesson.lessonId) : 0}.
+                            </span>
                             <span className={`text-sm font-medium px-3 py-1 rounded text-white ${
                               getSelectedLesson()?.type === 'intro' ? 'bg-sky-600' :
                               getSelectedLesson()?.type === 'quiz' ? 'bg-violet-600' :
