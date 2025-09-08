@@ -65,6 +65,11 @@ export default function EditCourse() {
   const [dragOverPosition, setDragOverPosition] = useState<'before' | 'after' | null>(null)
   const [dragOverLessonId, setDragOverLessonId] = useState<string | null>(null)
   
+  // Module drag and drop state
+  const [draggedModule, setDraggedModule] = useState<string | null>(null)
+  const [dragOverModulePosition, setDragOverModulePosition] = useState<'before' | 'after' | null>(null)
+  const [dragOverTargetModule, setDragOverTargetModule] = useState<string | null>(null)
+  
   // Course metadata
   const [courseTitle, setCourseTitle] = useState('')
   const [courseLanguage, setCourseLanguage] = useState('solidity')
@@ -171,6 +176,88 @@ export default function EditCourse() {
     setDragOverModule(null)
     setDragOverLessonId(null)
     setDragOverPosition(null)
+  }
+
+  const clearModuleDragState = () => {
+    setDraggedModule(null)
+    setDragOverModulePosition(null)
+    setDragOverTargetModule(null)
+  }
+
+  // Module drag and drop helper functions
+  const handleModuleDragStart = (e: React.DragEvent, moduleId: string) => {
+    setDraggedModule(moduleId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', '') // Required for Firefox
+  }
+
+  const handleModuleDragEnd = () => {
+    clearModuleDragState()
+  }
+
+  const handleModuleDragOver = (e: React.DragEvent, targetModuleId: string, position: 'before' | 'after') => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverTargetModule(targetModuleId)
+    setDragOverModulePosition(position)
+  }
+
+  const handleModuleDragLeave = (e: React.DragEvent) => {
+    setDragOverTargetModule(null)
+    setDragOverModulePosition(null)
+  }
+
+  const handleModuleDrop = (e: React.DragEvent, targetModuleId: string, position: 'before' | 'after') => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!draggedModule) return
+    
+    // Don't allow dropping on itself
+    if (draggedModule === targetModuleId) {
+      clearModuleDragState()
+      return
+    }
+    
+    // Reorder modules
+    reorderModules(draggedModule, targetModuleId, position)
+    clearModuleDragState()
+  }
+
+  const reorderModules = (sourceModuleId: string, targetModuleId: string, position: 'before' | 'after') => {
+    setModules(prevModules => {
+      const newModules = [...prevModules]
+      
+      // Find source module
+      const sourceModule = newModules.find(m => m.id === sourceModuleId)
+      if (!sourceModule) return prevModules
+      
+      // Remove source module
+      const modulesWithoutSource = newModules.filter(m => m.id !== sourceModuleId)
+      
+      // Find target module index
+      const targetIndex = modulesWithoutSource.findIndex(m => m.id === targetModuleId)
+      if (targetIndex === -1) return prevModules
+      
+      // Calculate insert index
+      const insertIndex = position === 'before' ? targetIndex : targetIndex + 1
+      
+      // Insert source module at new position
+      const reorderedModules = [
+        ...modulesWithoutSource.slice(0, insertIndex),
+        sourceModule,
+        ...modulesWithoutSource.slice(insertIndex)
+      ]
+      
+      // Update order numbers
+      return reorderedModules.map((module, index) => ({
+        ...module,
+        order: index + 1
+      }))
+    })
+    
+    setHasUnsavedChanges(true)
   }
 
   const reorderLessons = (sourceModuleId: string, sourceLessonId: string, targetModuleId: string, targetLessonId: string, position: 'before' | 'after') => {
@@ -868,21 +955,47 @@ export default function EditCourse() {
                     ) : (
                       <div className="space-y-2">
                         {modules.map((module, moduleIndex) => (
-                          <div key={module.id} className="border border-gray-200 dark:border-gray-600 rounded">
-                            {/* Module Header */}
-                            <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleModuleCollapse(module.id)}
-                                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                >
-                                  {collapsedModules.has(module.id) ? '▶' : '▼'}
-                                </button>
-                                <span className="font-medium text-sm text-gray-900 dark:text-white">
-                                  Module {moduleIndex + 1}
-                                </span>
-                              </div>
+                          <div key={module.id}>
+                            {/* Drop zone before module */}
+                            <div
+                              className={`h-1 transition-colors ${
+                                dragOverTargetModule === module.id && 
+                                dragOverModulePosition === 'before'
+                                  ? 'bg-blue-500' 
+                                  : 'bg-transparent'
+                              }`}
+                              onDragOver={(e) => handleModuleDragOver(e, module.id, 'before')}
+                              onDragLeave={handleModuleDragLeave}
+                              onDrop={(e) => handleModuleDrop(e, module.id, 'before')}
+                            />
+                            
+                            {/* Module Container */}
+                            <div className={`border border-gray-200 dark:border-gray-600 rounded transition-colors ${
+                              draggedModule === module.id ? 'opacity-50 bg-gray-200 dark:bg-gray-600' : ''
+                            }`}>
+                              {/* Module Header */}
+                              <div 
+                                draggable
+                                onDragStart={(e) => handleModuleDragStart(e, module.id)}
+                                onDragEnd={handleModuleDragEnd}
+                                className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 cursor-move"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-gray-400 dark:text-gray-500 cursor-move mr-1">⋮⋮</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      toggleModuleCollapse(module.id)
+                                    }}
+                                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                  >
+                                    {collapsedModules.has(module.id) ? '▶' : '▼'}
+                                  </button>
+                                  <span className="font-medium text-sm text-gray-900 dark:text-white">
+                                    Module {moduleIndex + 1}
+                                  </span>
+                                </div>
                               <div className="flex space-x-1">
                                 <button
                                   type="button"
@@ -1038,6 +1151,22 @@ export default function EditCourse() {
                                   )}
                                 </div>
                               </div>
+                            )}
+                            </div>
+                            
+                            {/* Drop zone after module (only for last module) */}
+                            {moduleIndex === modules.length - 1 && (
+                              <div
+                                className={`h-1 transition-colors ${
+                                  dragOverTargetModule === module.id && 
+                                  dragOverModulePosition === 'after'
+                                    ? 'bg-blue-500' 
+                                    : 'bg-transparent'
+                                }`}
+                                onDragOver={(e) => handleModuleDragOver(e, module.id, 'after')}
+                                onDragLeave={handleModuleDragLeave}
+                                onDrop={(e) => handleModuleDrop(e, module.id, 'after')}
+                              />
                             )}
                           </div>
                         ))}
