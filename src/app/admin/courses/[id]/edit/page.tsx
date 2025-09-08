@@ -59,6 +59,12 @@ export default function EditCourse() {
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(true)
   const [activeTab, setActiveTab] = useState<'instructions' | 'initialCode' | 'solutionCode' | 'tests'>('instructions')
   
+  // Drag and drop state
+  const [draggedLesson, setDraggedLesson] = useState<{moduleId: string, lessonId: string} | null>(null)
+  const [dragOverModule, setDragOverModule] = useState<string | null>(null)
+  const [dragOverPosition, setDragOverPosition] = useState<'before' | 'after' | null>(null)
+  const [dragOverLessonId, setDragOverLessonId] = useState<string | null>(null)
+  
   // Course metadata
   const [courseTitle, setCourseTitle] = useState('')
   const [courseLanguage, setCourseLanguage] = useState('solidity')
@@ -101,6 +107,145 @@ export default function EditCourse() {
   const getSelectedModule = () => {
     if (!selectedLesson) return null
     return modules.find(m => m.id === selectedLesson.moduleId) || null
+  }
+
+  // Drag and drop helper functions
+  const handleLessonDragStart = (e: React.DragEvent, moduleId: string, lessonId: string) => {
+    setDraggedLesson({ moduleId, lessonId })
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', '') // Required for Firefox
+  }
+
+  const handleLessonDragEnd = () => {
+    // Clean up drag state when drag operation ends
+    clearDragState()
+  }
+
+  const handleLessonDragOver = (e: React.DragEvent, moduleId: string, lessonId: string, position: 'before' | 'after') => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverModule(moduleId)
+    setDragOverLessonId(lessonId)
+    setDragOverPosition(position)
+  }
+
+  const handleLessonDragLeave = (e: React.DragEvent) => {
+    // Simple drag leave - clear the drop zone state
+    setDragOverModule(null)
+    setDragOverLessonId(null)
+    setDragOverPosition(null)
+  }
+
+  const handleLessonDrop = (e: React.DragEvent, targetModuleId: string, targetLessonId: string, position: 'before' | 'after') => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!draggedLesson) return
+    
+    const sourceModuleId = draggedLesson.moduleId
+    const sourceLessonId = draggedLesson.lessonId
+    
+    // Don't allow dropping on itself
+    if (sourceModuleId === targetModuleId && sourceLessonId === targetLessonId) {
+      clearDragState()
+      return
+    }
+    
+    // Reorder lessons
+    reorderLessons(sourceModuleId, sourceLessonId, targetModuleId, targetLessonId, position)
+    clearDragState()
+  }
+
+  const clearDragState = () => {
+    setDraggedLesson(null)
+    setDragOverModule(null)
+    setDragOverLessonId(null)
+    setDragOverPosition(null)
+  }
+
+  const reorderLessons = (sourceModuleId: string, sourceLessonId: string, targetModuleId: string, targetLessonId: string, position: 'before' | 'after') => {
+    setModules(prevModules => {
+      const newModules = [...prevModules]
+      
+      // Find source module and lesson
+      const sourceModule = newModules.find(m => m.id === sourceModuleId)
+      if (!sourceModule) return prevModules
+      
+      const sourceLesson = sourceModule.lessons.find(l => l.id === sourceLessonId)
+      if (!sourceLesson) return prevModules
+      
+      // Find target module
+      const targetModule = newModules.find(m => m.id === targetModuleId)
+      if (!targetModule) return prevModules
+      
+      // If moving within the same module
+      if (sourceModuleId === targetModuleId) {
+        const lessons = [...sourceModule.lessons]
+        const sourceIndex = lessons.findIndex(l => l.id === sourceLessonId)
+        const targetIndex = lessons.findIndex(l => l.id === targetLessonId)
+        
+        // Remove source lesson
+        lessons.splice(sourceIndex, 1)
+        
+        // Calculate new insert index (accounting for removal)
+        let insertIndex = lessons.findIndex(l => l.id === targetLessonId)
+        if (position === 'after') insertIndex += 1
+        
+        // Insert at new position
+        lessons.splice(insertIndex, 0, sourceLesson)
+        
+        // Update the module
+        const updatedModule = {
+          ...sourceModule,
+          lessons: lessons.map((lesson, index) => ({
+            ...lesson,
+            order: index + 1
+          }))
+        }
+        
+        return newModules.map(module => 
+          module.id === sourceModuleId ? updatedModule : module
+        )
+      } else {
+        // Moving between different modules
+        const updatedSourceModule = {
+          ...sourceModule,
+          lessons: sourceModule.lessons.filter(l => l.id !== sourceLessonId)
+        }
+        
+        // Insert lesson at new position in target module
+        const targetIndex = targetModule.lessons.findIndex(l => l.id === targetLessonId)
+        const insertIndex = position === 'before' ? targetIndex : targetIndex + 1
+        
+        const updatedTargetModule = {
+          ...targetModule,
+          lessons: [
+            ...targetModule.lessons.slice(0, insertIndex),
+            sourceLesson,
+            ...targetModule.lessons.slice(insertIndex)
+          ]
+        }
+        
+        // Update modules array
+        const result = newModules.map(module => {
+          if (module.id === sourceModuleId) return updatedSourceModule
+          if (module.id === targetModuleId) return updatedTargetModule
+          return module
+        })
+        
+        // Update order numbers
+        return result.map(module => ({
+          ...module,
+          lessons: module.lessons.map((lesson, index) => ({
+            ...lesson,
+            order: index + 1
+          }))
+        }))
+      }
+    })
+    
+    setHasUnsavedChanges(true)
   }
 
   // Save individual module
@@ -240,9 +385,9 @@ export default function EditCourse() {
         setCourseThumbnail(courseData.thumbnail || null)
         
         // Process modules and lessons to ensure proper format
-        const processedModules = (courseData.modules || []).map(module => ({
+        const processedModules = (courseData.modules || []).map((module: any) => ({
           ...module,
-          lessons: module.lessons.map(lesson => ({
+          lessons: module.lessons.map((lesson: any) => ({
             ...lesson,
             type: lesson.type.toLowerCase() as 'intro' | 'quiz' | 'challenge'
           }))
@@ -250,7 +395,7 @@ export default function EditCourse() {
         setModules(processedModules)
         
         // Collapse all modules by default
-        const allModuleIds = new Set(processedModules.map(module => module.id))
+        const allModuleIds = new Set<string>(processedModules.map((module: any) => module.id))
         setCollapsedModules(allModuleIds)
       } else {
         setMessage('Failed to fetch course')
@@ -657,7 +802,7 @@ export default function EditCourse() {
                       <ImageUpload
                         onImageSelect={handleThumbnailSelect}
                         currentImage={courseThumbnail}
-                        error={thumbnailError}
+                        error={thumbnailError || undefined}
                         disabled={isSaving}
                       />
                     </div>
@@ -806,37 +951,75 @@ export default function EditCourse() {
                                   ) : (
                                     <div className="space-y-1">
                                       {module.lessons.map((lesson, lessonIndex) => (
-                                        <div
-                                          key={lesson.id}
-                                          className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
-                                            selectedLesson?.moduleId === module.id && selectedLesson?.lessonId === lesson.id
-                                              ? 'bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-600'
-                                              : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                                          }`}
-                                          onClick={() => selectLesson(module.id, lesson.id)}
-                                        >
-                                          <div className="flex items-center space-x-2">
-                                            <span className={`text-xs font-medium px-2 py-1 rounded text-white ${
-                                              lesson.type === 'intro' ? 'bg-sky-600' :
-                                              lesson.type === 'quiz' ? 'bg-violet-600' :
-                                              'bg-emerald-600'
-                                            }`}>
-                                              {lesson.type === 'intro' ? 'I' : lesson.type === 'quiz' ? 'Q' : 'C'}
-                                            </span>
-                                            <span className="text-sm text-gray-700 dark:text-gray-300">
-                                              {lesson.title || `Lesson ${lessonIndex + 1}`}
-                                            </span>
-                                          </div>
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              removeLesson(module.id, lesson.id)
-                                            }}
-                                            className="text-red-500 hover:text-red-700 text-xs px-1"
+                                        <div key={lesson.id}>
+                                          {/* Drop zone before lesson */}
+                                          <div
+                                            className={`h-1 transition-colors ${
+                                              dragOverModule === module.id && 
+                                              dragOverLessonId === lesson.id && 
+                                              dragOverPosition === 'before'
+                                                ? 'bg-blue-500' 
+                                                : 'bg-transparent'
+                                            }`}
+                                            onDragOver={(e) => handleLessonDragOver(e, module.id, lesson.id, 'before')}
+                                            onDragLeave={handleLessonDragLeave}
+                                            onDrop={(e) => handleLessonDrop(e, module.id, lesson.id, 'before')}
+                                          />
+                                          
+                                          {/* Lesson item */}
+                                          <div
+                                            draggable
+                                            onDragStart={(e) => handleLessonDragStart(e, module.id, lesson.id)}
+                                            onDragEnd={handleLessonDragEnd}
+                                            className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                                              selectedLesson?.moduleId === module.id && selectedLesson?.lessonId === lesson.id
+                                                ? 'bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-600'
+                                                : draggedLesson?.moduleId === module.id && draggedLesson?.lessonId === lesson.id
+                                                ? 'opacity-50 bg-gray-200 dark:bg-gray-600'
+                                                : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            }`}
+                                            onClick={() => selectLesson(module.id, lesson.id)}
                                           >
-                                            ×
-                                          </button>
+                                            <div className="flex items-center space-x-2">
+                                              <span className="text-gray-400 dark:text-gray-500 cursor-move mr-1">⋮⋮</span>
+                                              <span className={`text-xs font-medium px-2 py-1 rounded text-white ${
+                                                lesson.type === 'intro' ? 'bg-sky-600' :
+                                                lesson.type === 'quiz' ? 'bg-violet-600' :
+                                                'bg-emerald-600'
+                                              }`}>
+                                                {lesson.type === 'intro' ? 'I' : lesson.type === 'quiz' ? 'Q' : 'C'}
+                                              </span>
+                                              <span className="text-sm text-gray-700 dark:text-gray-300">
+                                                {lesson.title || `Lesson ${lessonIndex + 1}`}
+                                              </span>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                removeLesson(module.id, lesson.id)
+                                              }}
+                                              className="text-red-500 hover:text-red-700 text-xs px-1"
+                                            >
+                                              ×
+                                            </button>
+                                          </div>
+                                          
+                                          {/* Drop zone after lesson (only for last lesson) */}
+                                          {lessonIndex === module.lessons.length - 1 && (
+                                            <div
+                                              className={`h-1 transition-colors ${
+                                                dragOverModule === module.id && 
+                                                dragOverLessonId === lesson.id && 
+                                                dragOverPosition === 'after'
+                                                  ? 'bg-blue-500' 
+                                                  : 'bg-transparent'
+                                              }`}
+                                              onDragOver={(e) => handleLessonDragOver(e, module.id, lesson.id, 'after')}
+                                              onDragLeave={handleLessonDragLeave}
+                                              onDrop={(e) => handleLessonDrop(e, module.id, lesson.id, 'after')}
+                                            />
+                                          )}
                                         </div>
                                       ))}
                                     </div>
