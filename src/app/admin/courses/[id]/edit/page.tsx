@@ -130,16 +130,23 @@ export default function EditCourse() {
     
     let html = markdown
     
-    // Highlight Solidity code blocks first
+    // First, extract and replace code blocks with placeholders to prevent them from being processed as paragraphs
+    const codeBlocks: string[] = []
+    
+    // Handle Solidity code blocks first
     html = html.replace(/```solidity\n?([\s\S]*?)```/g, (match, code) => {
       const highlighted = highlightSolidityCode(code.trim())
-      return `<pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4"><code class="language-solidity">${highlighted}</code></pre>`
+      const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`
+      codeBlocks.push(`<pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" style="line-height: 1.5 !important; margin: 0 !important; padding: 1rem !important; font-size: 14px !important;"><code class="language-solidity" style="line-height: 1.5 !important; margin: 0 !important; padding: 0 !important; display: block !important; font-size: 14px !important;">${highlighted}</code></pre>`)
+      return placeholder
     })
     
     // Handle other code blocks
     html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
       if (lang === 'solidity') return match // Already handled above
-      return `<pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4"><code class="language-${lang || 'text'}">${code.trim()}</code></pre>`
+      const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`
+      codeBlocks.push(`<pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" style="line-height: 1.0 !important; margin: 0 !important; padding: 1rem !important; font-size: 14px !important;"><code class="language-${lang || 'text'}" style="line-height: 1.0 !important; margin: 0 !important; padding: 0 !important; display: block !important; font-size: 14px !important;">${code.trim()}</code></pre>`)
+      return placeholder
     })
     
     // Handle inline code
@@ -210,9 +217,20 @@ export default function EditCourse() {
     // Handle paragraphs (wrap remaining text)
     html = html.replace(/^(?!<[hlupo])(.+)$/gm, '<p class="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed">$1</p>')
     
+    // Reduce margin between paragraphs and lists
+    html = html.replace(/(<p class="mb-4[^"]*">[^<]*<\/p>)\s*(<ul|<ol)/g, (match, pTag, listTag) => {
+      const newPTag = pTag.replace('mb-4', 'mb-2')
+      return newPTag + listTag
+    })
+    
     // Clean up extra whitespace and empty paragraphs
     html = html.replace(/<p[^>]*>\s*<\/p>/g, '')
     html = html.replace(/\n\s*\n/g, '\n')
+    
+    // Restore code blocks
+    codeBlocks.forEach((codeBlock, index) => {
+      html = html.replace(`__CODE_BLOCK_${index}__`, codeBlock)
+    })
     
     return html.trim()
   }
@@ -223,7 +241,7 @@ export default function EditCourse() {
     
     // Process line by line to avoid conflicts
     const lines = highlighted.split('\n')
-    const processedLines = lines.map(line => {
+    const processedLines = lines.map((line, index) => {
       let processedLine = line
       
       // Handle comments first (single line and multi-line)
@@ -262,6 +280,8 @@ export default function EditCourse() {
           processedLine = processedLine.replace(regex, '<span class="text-blue-400 font-semibold">$1</span>')
         })
       }
+      
+      // No extra spacing needed - let the natural line breaks handle it
       
       return processedLine
     })
@@ -1504,6 +1524,19 @@ export default function EditCourse() {
                                                       background: rgba(31, 41, 55, 0.95);
                                                       color: #f9fafb;
                                                     }
+                                                  }
+                                                  pre {
+                                                    line-height: 1.2 !important;
+                                                    margin: 0 !important;
+                                                    padding: 1rem !important;
+                                                    font-size: 14px !important;
+                                                  }
+                                                  code {
+                                                    line-height: 1.2 !important;
+                                                    margin: 0 !important;
+                                                    padding: 0 !important;
+                                                    display: block !important;
+                                                    font-size: 14px !important;
                                                   }
                                                 </style>
                                               </head>
