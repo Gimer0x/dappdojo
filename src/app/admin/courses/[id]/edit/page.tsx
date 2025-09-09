@@ -58,6 +58,7 @@ export default function EditCourse() {
   const [isSavingLesson, setIsSavingLesson] = useState<string | null>(null)
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(true)
   const [activeTab, setActiveTab] = useState<'instructions' | 'initialCode' | 'solutionCode' | 'tests'>('instructions')
+  const [introTab, setIntroTab] = useState<'edit' | 'preview'>('edit')
   
   // Drag and drop state
   const [draggedLesson, setDraggedLesson] = useState<{moduleId: string, lessonId: string} | null>(null)
@@ -121,6 +122,151 @@ export default function EditCourse() {
     
     const lessonIndex = module.lessons.findIndex(l => l.id === targetLessonId)
     return lessonIndex + 1
+  }
+
+  // Comprehensive Markdown renderer with syntax highlighting
+  const renderMarkdown = (markdown: string): string => {
+    if (!markdown) return ''
+    
+    let html = markdown
+    
+    // Highlight Solidity code blocks first
+    html = html.replace(/```solidity\n?([\s\S]*?)```/g, (match, code) => {
+      const highlighted = highlightSolidityCode(code.trim())
+      return `<pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4"><code class="language-solidity">${highlighted}</code></pre>`
+    })
+    
+    // Handle other code blocks
+    html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
+      if (lang === 'solidity') return match // Already handled above
+      return `<pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4"><code class="language-${lang || 'text'}">${code.trim()}</code></pre>`
+    })
+    
+    // Handle inline code
+    html = html.replace(/`([^`]+)`/g, '<code class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono">$1</code>')
+    
+    // Handle headings
+    html = html.replace(/^######\s+(.*)$/gm, '<h6 class="text-sm font-bold text-gray-900 dark:text-white mb-2 mt-4">$1</h6>')
+    html = html.replace(/^#####\s+(.*)$/gm, '<h5 class="text-base font-bold text-gray-900 dark:text-white mb-2 mt-4">$1</h5>')
+    html = html.replace(/^####\s+(.*)$/gm, '<h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2 mt-4">$1</h4>')
+    html = html.replace(/^###\s+(.*)$/gm, '<h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 mt-4">$1</h3>')
+    html = html.replace(/^##\s+(.*)$/gm, '<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-3 mt-6">$1</h2>')
+    html = html.replace(/^#\s+(.*)$/gm, '<h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-8">$1</h1>')
+    
+    // Handle blockquotes with nested content
+    html = html.replace(/^(> .*(\n> .*)*)$/gm, (match) => {
+      let content = match.replace(/^> /gm, '').trim()
+      
+      // Process nested markdown within blockquote
+      content = content.replace(/^######\s+(.*)$/gm, '<h6 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">$1</h6>')
+      content = content.replace(/^#####\s+(.*)$/gm, '<h5 class="text-base font-bold text-gray-700 dark:text-gray-300 mb-1">$1</h5>')
+      content = content.replace(/^####\s+(.*)$/gm, '<h4 class="text-lg font-bold text-gray-700 dark:text-gray-300 mb-1">$1</h4>')
+      content = content.replace(/^###\s+(.*)$/gm, '<h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-1">$1</h3>')
+      content = content.replace(/^##\s+(.*)$/gm, '<h2 class="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">$1</h2>')
+      content = content.replace(/^#\s+(.*)$/gm, '<h1 class="text-3xl font-bold text-gray-700 dark:text-gray-300 mb-2">$1</h1>')
+      
+      // Handle lists within blockquotes
+      content = content.replace(/^\* (.*)$/gm, '<li class="ml-4">$1</li>')
+      content = content.replace(/^- (.*)$/gm, '<li class="ml-4">$1</li>')
+      content = content.replace(/^(\d+)\. (.*)$/gm, '<li class="ml-4">$2</li>')
+      content = content.replace(/(<li.*<\/li>\s*)+/g, '<ul class="list-disc list-inside mb-2 space-y-1">$&</ul>')
+      
+      // Handle bold and italic within blockquotes
+      content = content.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold">$1</strong>')
+      content = content.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>')
+      
+      // Wrap remaining text in paragraphs
+      content = content.replace(/^(?!<[hlu])(.*)$/gm, '<p class="mb-2 text-gray-700 dark:text-gray-300">$1</p>')
+      
+      return `<blockquote class="border-l-4 border-amber-400 pl-4 py-2 my-4 bg-amber-50 dark:bg-amber-900/20 rounded-r-md">${content}</blockquote>`
+    })
+    
+    // Handle images (including video thumbnails)
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="max-w-full h-auto rounded-lg my-4 shadow-md" />')
+    
+    // Handle video embeds (YouTube thumbnail pattern)
+    html = html.replace(/\[!\[([^\]]*)\]\(([^)]+)\)\]\(([^)]+)\)/g, '<a href="$3" target="_blank" rel="noopener noreferrer" class="inline-block my-4"><img src="$2" alt="$1" class="max-w-full h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer border-2 border-transparent hover:border-amber-400" /></a>')
+    
+    // Handle links
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline font-medium">$1</a>')
+    
+    // Handle unordered lists
+    html = html.replace(/^\* (.*)$/gm, '<li class="mb-1">$1</li>')
+    html = html.replace(/^- (.*)$/gm, '<li class="mb-1">$1</li>')
+    html = html.replace(/(<li class="mb-1">.*<\/li>\s*)+/g, '<ul class="list-disc list-inside mb-4 ml-4 space-y-1">$&</ul>')
+    
+    // Handle ordered lists
+    html = html.replace(/^(\d+)\. (.*)$/gm, '<li class="mb-1">$2</li>')
+    html = html.replace(/(<li class="mb-1">.*<\/li>\s*)+/g, (match) => {
+      // Check if this is part of an unordered list already
+      if (match.includes('list-disc')) return match
+      return `<ol class="list-decimal list-inside mb-4 ml-4 space-y-1">${match}</ol>`
+    })
+    
+    // Handle bold and italic text
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-white">$1</strong>')
+    html = html.replace(/\*([^*]+)\*/g, '<em class="italic text-gray-800 dark:text-gray-200">$1</em>')
+    
+    // Handle paragraphs (wrap remaining text)
+    html = html.replace(/^(?!<[hlupo])(.+)$/gm, '<p class="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed">$1</p>')
+    
+    // Clean up extra whitespace and empty paragraphs
+    html = html.replace(/<p[^>]*>\s*<\/p>/g, '')
+    html = html.replace(/\n\s*\n/g, '\n')
+    
+    return html.trim()
+  }
+
+  // Solidity syntax highlighting function
+  const highlightSolidityCode = (code: string): string => {
+    let highlighted = code
+    
+    // Process line by line to avoid conflicts
+    const lines = highlighted.split('\n')
+    const processedLines = lines.map(line => {
+      let processedLine = line
+      
+      // Handle comments first (single line and multi-line)
+      processedLine = processedLine.replace(/(\/\/.*$)/g, '<span class="text-gray-500 dark:text-gray-400 italic">$1</span>')
+      processedLine = processedLine.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="text-gray-500 dark:text-gray-400 italic">$1</span>')
+      
+      // Handle strings (but not if they're inside comments)
+      if (!processedLine.includes('<span class="text-gray-500')) {
+        processedLine = processedLine.replace(/(".*?")/g, '<span class="text-green-400">$1</span>')
+        processedLine = processedLine.replace(/('.*?')/g, '<span class="text-green-400">$1</span>')
+      }
+      
+      // Handle numbers (but not if they're inside strings or comments)
+      if (!processedLine.includes('<span class="text-green-400') && !processedLine.includes('<span class="text-gray-500')) {
+        processedLine = processedLine.replace(/\b(\d+\.?\d*)\b/g, '<span class="text-blue-300">$1</span>')
+      }
+      
+      // Handle Solidity keywords (but not if they're inside strings or comments)
+      if (!processedLine.includes('<span class="text-green-400') && !processedLine.includes('<span class="text-gray-500')) {
+        const keywords = [
+          'contract', 'pragma', 'solidity', 'function', 'modifier', 'event', 'struct', 'enum',
+          'mapping', 'address', 'uint', 'uint8', 'uint16', 'uint32', 'uint64', 'uint128', 'uint256',
+          'int', 'int8', 'int16', 'int32', 'int64', 'int128', 'int256', 'bool', 'string', 'bytes',
+          'bytes1', 'bytes2', 'bytes4', 'bytes8', 'bytes16', 'bytes32',
+          'public', 'private', 'internal', 'external', 'pure', 'view', 'payable', 'nonpayable',
+          'memory', 'storage', 'calldata', 'constant', 'immutable',
+          'if', 'else', 'for', 'while', 'do', 'break', 'continue', 'return', 'try', 'catch',
+          'require', 'assert', 'revert', 'throw',
+          'msg', 'tx', 'block', 'now', 'this', 'super',
+          'wei', 'gwei', 'ether', 'seconds', 'minutes', 'hours', 'days', 'weeks', 'years',
+          'true', 'false', 'null', 'undefined'
+        ]
+        
+        keywords.forEach(keyword => {
+          const regex = new RegExp(`\\b(${keyword})\\b`, 'g')
+          processedLine = processedLine.replace(regex, '<span class="text-blue-400 font-semibold">$1</span>')
+        })
+      }
+      
+      return processedLine
+    })
+    
+    return processedLines.join('\n')
   }
 
   // Drag and drop helper functions
@@ -1264,24 +1410,134 @@ export default function EditCourse() {
                             {/* Lesson Type Specific Content */}
                             {getSelectedLesson()?.type === 'intro' && (
                               <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                  Introduction Content (Markdown) *
-                                </label>
-                                <textarea
-                                  value={getSelectedLesson()?.contentMarkdown || ''}
-                                  onChange={(e) => {
-                                    if (selectedLesson) {
-                                      updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'contentMarkdown', e.target.value)
-                                    }
-                                  }}
-                                  rows={12}
-                                  maxLength={5000}
-                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
-                                  placeholder="Write your introduction content in Markdown format..."
-                                />
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                  {(getSelectedLesson()?.contentMarkdown?.length || 0)}/5000 characters
+                                {/* Tab Navigation */}
+                                <div className="border-b border-gray-200 dark:border-gray-600 mb-4">
+                                  <nav className="-mb-px flex space-x-8">
+                                    {[
+                                      { id: 'edit', label: 'Edit', icon: '✏️' },
+                                      { id: 'preview', label: 'Preview', icon: '👀' }
+                                    ].map((tab) => (
+                                      <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setIntroTab(tab.id as 'edit' | 'preview')}
+                                        className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                                          introTab === tab.id
+                                            ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                        }`}
+                                      >
+                                        <span className="mr-2">{tab.icon}</span>
+                                        {tab.label}
+                                      </button>
+                                    ))}
+                                  </nav>
                                 </div>
+
+                                {/* Tab Content */}
+                                {introTab === 'edit' && (
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                      Introduction Content (Markdown) *
+                                    </label>
+                                    <textarea
+                                      value={getSelectedLesson()?.contentMarkdown || ''}
+                                      onChange={(e) => {
+                                        if (selectedLesson) {
+                                          updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'contentMarkdown', e.target.value)
+                                        }
+                                      }}
+                                      rows={20}
+                                      maxLength={5000}
+                                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                                      placeholder="Write your introduction content in Markdown format..."
+                                    />
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                      {(getSelectedLesson()?.contentMarkdown?.length || 0)}/5000 characters
+                                    </div>
+                                  </div>
+                                )}
+
+                                {introTab === 'preview' && (
+                                  <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Markdown Preview
+                                      </label>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const content = getSelectedLesson()?.contentMarkdown || ''
+                                          if (!content.trim()) {
+                                            alert('No content to preview. Please add some markdown content first.')
+                                            return
+                                          }
+                                          
+                                          const html = renderMarkdown(content)
+                                          const newWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes')
+                                          if (newWindow) {
+                                            newWindow.document.write(`
+                                              <!DOCTYPE html>
+                                              <html lang="en">
+                                              <head>
+                                                <meta charset="UTF-8">
+                                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                                <title>Markdown Preview</title>
+                                                <script src="https://cdn.tailwindcss.com"></script>
+                                                <style>
+                                                  body { 
+                                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                                    min-height: 100vh;
+                                                    padding: 2rem;
+                                                  }
+                                                  .preview-container {
+                                                    background: rgba(255, 255, 255, 0.95);
+                                                    backdrop-filter: blur(10px);
+                                                    border-radius: 1rem;
+                                                    padding: 2rem;
+                                                    max-width: 4xl;
+                                                    margin: 0 auto;
+                                                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                                                  }
+                                                  @media (prefers-color-scheme: dark) {
+                                                    .preview-container {
+                                                      background: rgba(31, 41, 55, 0.95);
+                                                      color: #f9fafb;
+                                                    }
+                                                  }
+                                                </style>
+                                              </head>
+                                              <body>
+                                                <div class="preview-container">
+                                                  ${html}
+                                                </div>
+                                              </body>
+                                              </html>
+                                            `)
+                                            newWindow.document.close()
+                                          }
+                                        }}
+                                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"
+                                      >
+                                        🚀 Open in New Window
+                                      </button>
+                                    </div>
+                                    <div className="border border-gray-300 dark:border-gray-600 rounded-md p-4 bg-white dark:bg-gray-800 max-h-96 overflow-y-auto">
+                                      {getSelectedLesson()?.contentMarkdown ? (
+                                        <div 
+                                          className="prose prose-sm max-w-none dark:prose-invert"
+                                          dangerouslySetInnerHTML={{ 
+                                            __html: renderMarkdown(getSelectedLesson()?.contentMarkdown || '') 
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="text-gray-500 dark:text-gray-400 italic text-center py-8">
+                                          No content to preview. Switch to Edit tab to add markdown content.
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
 
