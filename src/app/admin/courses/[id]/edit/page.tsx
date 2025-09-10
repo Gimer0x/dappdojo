@@ -1212,6 +1212,19 @@ export default function EditCourse() {
                             >
                               {isSavingLesson === selectedLesson?.lessonId ? 'Saving...' : '💾 Save Lesson'}
                             </button>
+                            {getSelectedLesson()?.type === 'intro' && introTab === 'preview' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const content = getSelectedLesson()?.contentMarkdown || ''
+                                  const lessonTitle = getSelectedLesson()?.title || 'Lesson Preview'
+                                  openMarkdownPreviewInNewWindow(content, lessonTitle)
+                                }}
+                                className="px-3 py-1 bg-amber-600 text-white rounded text-sm font-medium hover:bg-amber-700"
+                              >
+                                🚀 Preview Lesson
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => {
@@ -1283,22 +1296,6 @@ export default function EditCourse() {
 
                                 {introTab === 'preview' && (
                                   <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Markdown Preview
-                                      </label>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const content = getSelectedLesson()?.contentMarkdown || ''
-                                          const lessonTitle = getSelectedLesson()?.title || 'Lesson Preview'
-                                          openMarkdownPreviewInNewWindow(content, lessonTitle)
-                                        }}
-                                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"
-                                      >
-                                        🚀 Open in New Window
-                                      </button>
-                                    </div>
                                     <div className="border border-gray-300 dark:border-gray-600 rounded-md p-4 bg-white dark:bg-gray-800 max-h-96 overflow-y-auto">
                                       {getSelectedLesson()?.contentMarkdown ? (
                                         <div 
