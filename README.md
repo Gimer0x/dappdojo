@@ -93,13 +93,6 @@ npm run dev
 
 The application will be available at `http://localhost:3000`
 
-## 🔐 Default Admin Credentials
-
-- **Email**: gimer@dappdojo.com
-- **Password**: Admin123!
-
-⚠️ **Important**: Change the default password after first login!
-
 ## 📚 Database Schema
 
 The platform uses a comprehensive database structure:
