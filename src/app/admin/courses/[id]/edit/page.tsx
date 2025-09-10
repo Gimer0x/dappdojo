@@ -1244,13 +1244,13 @@ export default function EditCourse() {
                       </div>
 
                       {/* Lesson Content */}
-                      <div className="flex-1 p-6 overflow-y-auto">
+                      <div className="flex-1 p-6 overflow-y-auto flex flex-col">
                         {getSelectedLesson() && (
-                          <div className="space-y-6">
+                          <div className="flex-1 flex flex-col">
 
                             {/* Lesson Type Specific Content */}
                             {getSelectedLesson()?.type === 'intro' && (
-                              <div>
+                              <div className="flex-1 flex flex-col">
                                 {/* Tab Navigation */}
                                 <div className="border-b border-gray-200 dark:border-gray-600 mb-4">
                                   <nav className="-mb-px flex space-x-8">
@@ -1277,7 +1277,7 @@ export default function EditCourse() {
 
                                 {/* Tab Content */}
                                 {introTab === 'edit' && (
-                                  <div>
+                                  <div className="flex-1 flex flex-col">
                                     <textarea
                                       value={getSelectedLesson()?.contentMarkdown || ''}
                                       onChange={(e) => {
@@ -1285,9 +1285,8 @@ export default function EditCourse() {
                                           updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'contentMarkdown', e.target.value)
                                         }
                                       }}
-                                      rows={29}
                                       maxLength={10000}
-                                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                                      className="flex-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
                                       placeholder="Write your introduction content in Markdown format..."
                                     />
                                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -1297,8 +1296,8 @@ export default function EditCourse() {
                                 )}
 
                                 {introTab === 'preview' && (
-                                  <div>
-                                    <div className="border border-gray-300 dark:border-gray-600 rounded-md p-4 bg-white dark:bg-gray-800 h-full overflow-y-auto">
+                                  <div className="flex-1 flex flex-col">
+                                    <div className="flex-1 border border-gray-300 dark:border-gray-600 rounded-md p-4 bg-white dark:bg-gray-800 overflow-y-auto">
                                       {getSelectedLesson()?.contentMarkdown ? (
                                         <div className="prose prose-sm max-w-none dark:prose-invert">
                                           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-200 dark:border-gray-600 pb-4">
@@ -1322,7 +1321,7 @@ export default function EditCourse() {
                             )}
 
                             {getSelectedLesson()?.type === 'quiz' && (
-                              <div>
+                              <div className="flex-1 flex flex-col">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                   Quiz Content (Markdown) *
                                 </label>
@@ -1333,9 +1332,8 @@ export default function EditCourse() {
                                       updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'contentMarkdown', e.target.value)
                                     }
                                   }}
-                                  rows={10}
                                   maxLength={3000}
-                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                                  className="flex-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
                                   placeholder="Write your quiz questions in Markdown format..."
                                 />
                                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -1345,7 +1343,7 @@ export default function EditCourse() {
                             )}
 
                             {getSelectedLesson()?.type === 'challenge' && (
-                              <div className="space-y-4">
+                              <div className="flex-1 flex flex-col">
                                 {/* Tab Navigation */}
                                 <div className="border-b border-gray-200 dark:border-gray-600">
                                   <nav className="-mb-px flex space-x-8">
@@ -1373,9 +1371,10 @@ export default function EditCourse() {
                                 </div>
 
                                 {/* Tab Content */}
-                                <div className="h-[calc(100vh-400px)]">
+                                <div className="flex-1 flex flex-col">
                                   {activeTab === 'instructions' && (
-                                    <div className="h-full">
+                                    <div className="flex-1 flex flex-col">
+                                      <div className="h-4"></div>
                                       <textarea
                                         value={getSelectedLesson()?.contentMarkdown || ''}
                                         onChange={(e) => {
@@ -1383,21 +1382,19 @@ export default function EditCourse() {
                                             updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'contentMarkdown', e.target.value)
                                           }
                                         }}
-                                        maxLength={2000}
-                                        className="w-full h-[calc(100%-40px)] px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
+                                        maxLength={10000}
+                                        className="flex-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
                                         placeholder="Write the challenge instructions in Markdown format..."
                                       />
                                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        {(getSelectedLesson()?.contentMarkdown?.length || 0)}/2000 characters
+                                        {(getSelectedLesson()?.contentMarkdown?.length || 0)}/10000 characters
                                       </div>
                                     </div>
                                   )}
 
                                   {activeTab === 'initialCode' && (
-                                    <div className="h-full">
-                                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Initial Code (Solidity) *
-                                      </label>
+                                    <div className="flex-1 flex flex-col">
+                                      <div className="h-4"></div>
                                       <textarea
                                         value={getSelectedLesson()?.initialCode || ''}
                                         onChange={(e) => {
@@ -1405,17 +1402,15 @@ export default function EditCourse() {
                                             updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'initialCode', e.target.value)
                                           }
                                         }}
-                                        className="w-full h-[calc(100%-40px)] px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
+                                        className="flex-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
                                         placeholder="// Initial code template for students..."
                                       />
                                     </div>
                                   )}
 
                                   {activeTab === 'solutionCode' && (
-                                    <div className="h-full">
-                                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Solution Code (Solidity) *
-                                      </label>
+                                    <div className="flex-1 flex flex-col">
+                                      <div className="h-4"></div>
                                       <textarea
                                         value={getSelectedLesson()?.solutionCode || ''}
                                         onChange={(e) => {
@@ -1423,17 +1418,15 @@ export default function EditCourse() {
                                             updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'solutionCode', e.target.value)
                                           }
                                         }}
-                                        className="w-full h-[calc(100%-40px)] px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
+                                        className="flex-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
                                         placeholder="// Complete solution code..."
                                       />
                                     </div>
                                   )}
 
                                   {activeTab === 'tests' && (
-                                    <div className="h-full">
-                                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Test Cases (Solidity) *
-                                      </label>
+                                    <div className="flex-1 flex flex-col">
+                                      <div className="h-4"></div>
                                       <textarea
                                         value={getSelectedLesson()?.tests || ''}
                                         onChange={(e) => {
@@ -1441,7 +1434,7 @@ export default function EditCourse() {
                                             updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'tests', e.target.value)
                                           }
                                         }}
-                                        className="w-full h-[calc(100%-40px)] px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
+                                        className="flex-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono resize-none"
                                         placeholder="// Test cases for the contract..."
                                       />
                                     </div>
