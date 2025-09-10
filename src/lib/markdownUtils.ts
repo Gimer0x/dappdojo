@@ -64,7 +64,7 @@ export function renderMarkdown(markdown: string): string {
   html = html.replace(/```solidity\n?([\s\S]*?)```/g, (match, code) => {
     const highlighted = highlightSolidityCode(code.trim());
     const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
-    codeBlocks.push(`<pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" style="line-height: 1.5 !important; margin: 0 !important; padding: 1rem !important; font-size: 14px !important;"><code class="language-solidity" style="line-height: 1.5 !important; margin: 0 !important; padding: 0 !important; display: block !important; font-size: 14px !important;">${highlighted}</code></pre>`);
+    codeBlocks.push(`<pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" style="line-height: 1.5 !important; margin: 0 !important; padding: 1rem !important; font-size: 16px !important;"><code class="language-solidity" style="line-height: 1.5 !important; margin: 0 !important; padding: 0 !important; display: block !important; font-size: 16px !important;">${highlighted}</code></pre>`);
     return placeholder;
   });
   
@@ -196,7 +196,7 @@ export function openMarkdownPreviewInNewWindow(markdown: string, title: string =
           }
           
           .container {
-            max-width: 56rem;
+            width: 75%;
             margin: 0 auto;
           }
           
@@ -355,7 +355,7 @@ export function openMarkdownPreviewInNewWindow(markdown: string, title: string =
             overflow-x: auto;
             margin: 1rem 0;
             line-height: 1.5;
-            font-size: 14px;
+            font-size: 16px;
           }
           
           .prose code {
@@ -371,7 +371,7 @@ export function openMarkdownPreviewInNewWindow(markdown: string, title: string =
             background-color: transparent;
             padding: 0;
             border-radius: 0;
-            font-size: 14px;
+            font-size: 16px;
             line-height: 1.5;
             display: block;
           }
