@@ -1212,7 +1212,7 @@ export default function EditCourse() {
                             >
                               {isSavingLesson === selectedLesson?.lessonId ? 'Saving...' : '💾 Save Lesson'}
                             </button>
-                            {getSelectedLesson()?.type === 'intro' && introTab === 'preview' && (
+                            {getSelectedLesson()?.type === 'intro' && (
                               <button
                                 type="button"
                                 onClick={() => {
