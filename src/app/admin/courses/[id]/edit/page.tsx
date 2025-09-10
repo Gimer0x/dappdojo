@@ -766,9 +766,6 @@ export default function EditCourse() {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Edit Course
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">
-                  Update course information and structure
-                </p>
               </div>
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
@@ -1183,22 +1180,24 @@ export default function EditCourse() {
                   {selectedLesson && getSelectedLesson() ? (
                     <div className="h-full flex flex-col">
                       {/* Lesson Header */}
-                      <div className="p-4 border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                              {selectedLesson ? getModuleLessonNumber(selectedLesson.moduleId, selectedLesson.lessonId) : 0}.
-                            </span>
-                            <span className={`text-sm font-medium px-3 py-1 rounded text-white ${
-                              getSelectedLesson()?.type === 'intro' ? 'bg-sky-600' :
-                              getSelectedLesson()?.type === 'quiz' ? 'bg-violet-600' :
-                              'bg-emerald-600'
-                            }`}>
-                              {getSelectedLesson()?.type.toUpperCase()}
-                            </span>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                              {getSelectedLesson()?.title || 'Untitled Lesson'}
-                            </h3>
+                      <div className="px-4 py-2 border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+                        <div className="flex items-center justify-between space-x-4">
+                          <div className="flex items-center space-x-3 flex-1">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              Lesson Title:
+                            </label>
+                            <input
+                              type="text"
+                              value={getSelectedLesson()?.title || ''}
+                              onChange={(e) => {
+                                if (selectedLesson) {
+                                  updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'title', e.target.value)
+                                }
+                              }}
+                              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm"
+                              placeholder="Enter lesson title"
+                              required
+                            />
                           </div>
                           <div className="flex space-x-2">
                             <button
@@ -1216,18 +1215,6 @@ export default function EditCourse() {
                             <button
                               type="button"
                               onClick={() => {
-                                const module = getSelectedModule()
-                                if (module) {
-                                  addLesson(module.id, getSelectedLesson()?.type || 'intro')
-                                }
-                              }}
-                              className="px-3 py-1 bg-amber-500 text-white rounded text-sm font-medium hover:bg-amber-600"
-                            >
-                              + Add Similar Lesson
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
                                 if (selectedLesson) {
                                   removeLesson(selectedLesson.moduleId, selectedLesson.lessonId)
                                   setSelectedLesson(null)
@@ -1235,7 +1222,7 @@ export default function EditCourse() {
                               }}
                               className="px-3 py-1 bg-red-500 text-white rounded text-sm font-medium hover:bg-red-600"
                             >
-                              Delete Lesson
+                              🗑️ Delete Lesson
                             </button>
                           </div>
                         </div>
@@ -1245,24 +1232,6 @@ export default function EditCourse() {
                       <div className="flex-1 p-6 overflow-y-auto">
                         {getSelectedLesson() && (
                           <div className="space-y-6">
-                            {/* Lesson Title */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Lesson Title *
-                              </label>
-                              <input
-                                type="text"
-                                value={getSelectedLesson()?.title || ''}
-                                onChange={(e) => {
-                                  if (selectedLesson) {
-                                    updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'title', e.target.value)
-                                  }
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white"
-                                placeholder="Enter lesson title"
-                                required
-                              />
-                            </div>
 
                             {/* Lesson Type Specific Content */}
                             {getSelectedLesson()?.type === 'intro' && (
@@ -1294,9 +1263,6 @@ export default function EditCourse() {
                                 {/* Tab Content */}
                                 {introTab === 'edit' && (
                                   <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                      Introduction Content (Markdown) *
-                                    </label>
                                     <textarea
                                       value={getSelectedLesson()?.contentMarkdown || ''}
                                       onChange={(e) => {
@@ -1304,13 +1270,13 @@ export default function EditCourse() {
                                           updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'contentMarkdown', e.target.value)
                                         }
                                       }}
-                                      rows={20}
-                                      maxLength={5000}
+                                      rows={26}
+                                      maxLength={10000}
                                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
                                       placeholder="Write your introduction content in Markdown format..."
                                     />
                                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                      {(getSelectedLesson()?.contentMarkdown?.length || 0)}/5000 characters
+                                      {(getSelectedLesson()?.contentMarkdown?.length || 0)}/10000 characters
                                     </div>
                                   </div>
                                 )}
