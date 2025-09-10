@@ -1376,9 +1376,6 @@ export default function EditCourse() {
                                 <div className="h-[calc(100vh-400px)]">
                                   {activeTab === 'instructions' && (
                                     <div className="h-full">
-                                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Instructions (Markdown) *
-                                      </label>
                                       <textarea
                                         value={getSelectedLesson()?.contentMarkdown || ''}
                                         onChange={(e) => {
