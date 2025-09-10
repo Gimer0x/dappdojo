@@ -162,7 +162,7 @@ export function renderMarkdown(markdown: string): string {
   return html.trim();
 }
 
-export function openMarkdownPreviewInNewWindow(markdown: string, title: string = 'Markdown Preview'): void {
+export function openMarkdownPreviewInNewWindow(markdown: string, title: string = 'Markdown Preview', moduleNumber?: number, lessonNumber?: number): void {
   if (!markdown.trim()) {
     alert('No content to preview. Please add some markdown content first.');
     return;
@@ -404,7 +404,8 @@ export function openMarkdownPreviewInNewWindow(markdown: string, title: string =
           </div>
         </div>
         <script>
-          document.getElementById('content').innerHTML = \`${html.replace(/`/g, '\\`')}\`;
+          const titleHtml = ${moduleNumber && lessonNumber ? `'<h1 style="font-size: 1.875rem; font-weight: 700; margin-bottom: 1.5rem; margin-top: 0; color: #ffffff; border-bottom: 1px solid #374151; padding-bottom: 1rem;">Lesson ${moduleNumber}.${lessonNumber} ${title}</h1>'` : `''`};
+          document.getElementById('content').innerHTML = titleHtml + \`${html.replace(/`/g, '\\`')}\`;
         </script>
       </body>
       </html>

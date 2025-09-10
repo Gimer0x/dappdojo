@@ -1218,7 +1218,9 @@ export default function EditCourse() {
                                 onClick={() => {
                                   const content = getSelectedLesson()?.contentMarkdown || ''
                                   const lessonTitle = getSelectedLesson()?.title || 'Lesson Preview'
-                                  openMarkdownPreviewInNewWindow(content, lessonTitle)
+                                  const moduleNumber = selectedLesson ? modules.findIndex(m => m.id === selectedLesson.moduleId) + 1 : 0
+                                  const lessonNumber = selectedLesson ? getModuleLessonNumber(selectedLesson.moduleId, selectedLesson.lessonId) : 0
+                                  openMarkdownPreviewInNewWindow(content, lessonTitle, moduleNumber, lessonNumber)
                                 }}
                                 className="px-3 py-1 bg-amber-600 text-white rounded text-sm font-medium hover:bg-amber-700"
                               >
@@ -1298,12 +1300,16 @@ export default function EditCourse() {
                                   <div>
                                     <div className="border border-gray-300 dark:border-gray-600 rounded-md p-4 bg-white dark:bg-gray-800 h-full overflow-y-auto">
                                       {getSelectedLesson()?.contentMarkdown ? (
-                                        <div 
-                                          className="prose prose-sm max-w-none dark:prose-invert"
-                                          dangerouslySetInnerHTML={{ 
-                                            __html: renderMarkdown(getSelectedLesson()?.contentMarkdown || '') 
-                                          }}
-                                        />
+                                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                                          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 border-b border-gray-200 dark:border-gray-600 pb-4">
+                                            Lesson {selectedLesson ? modules.findIndex(m => m.id === selectedLesson.moduleId) + 1 : 0}.{selectedLesson ? getModuleLessonNumber(selectedLesson.moduleId, selectedLesson.lessonId) : 0} {getSelectedLesson()?.title || 'Untitled Lesson'}
+                                          </h1>
+                                          <div 
+                                            dangerouslySetInnerHTML={{ 
+                                              __html: renderMarkdown(getSelectedLesson()?.contentMarkdown || '') 
+                                            }}
+                                          />
+                                        </div>
                                       ) : (
                                         <div className="text-gray-500 dark:text-gray-400 italic text-center py-8">
                                           No content to preview. Switch to Edit tab to add markdown content.
