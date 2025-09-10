@@ -757,9 +757,9 @@ export default function EditCourse() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <main className="max-w-full mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow">
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      <main className="flex-1 flex flex-col">
+        <div className="bg-white dark:bg-gray-900 shadow flex-1 flex flex-col">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
@@ -782,9 +782,9 @@ export default function EditCourse() {
           </div>
 
 
-          <div className="p-6">
+          <div className="p-4 flex-1 flex flex-col">
             {message && (
-              <div className={`mb-6 p-4 rounded-md ${
+              <div className={`mb-4 p-4 rounded-md ${
                 messageType === 'success' 
                   ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' 
                   : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
@@ -793,8 +793,8 @@ export default function EditCourse() {
               </div>
             )}
 
-            <form id="course-form" onSubmit={handleSubmit} className="h-full">
-              <div className="flex h-[calc(100vh-180px)]">
+            <form id="course-form" onSubmit={handleSubmit} className="flex-1 flex flex-col">
+              <div className="flex flex-1">
                 {/* Left Sidebar - Tree Navigation */}
                 <div className="w-1/3 border-r border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 flex flex-col">
                   <div className="border-b border-gray-300 dark:border-gray-600 flex-shrink-0">
@@ -1283,7 +1283,7 @@ export default function EditCourse() {
                                           updateLesson(selectedLesson.moduleId, selectedLesson.lessonId, 'contentMarkdown', e.target.value)
                                         }
                                       }}
-                                      rows={26}
+                                      rows={29}
                                       maxLength={10000}
                                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-md focus:ring-amber-500 focus:border-amber-500 dark:bg-gray-700 dark:text-white text-sm font-mono"
                                       placeholder="Write your introduction content in Markdown format..."
@@ -1296,7 +1296,7 @@ export default function EditCourse() {
 
                                 {introTab === 'preview' && (
                                   <div>
-                                    <div className="border border-gray-300 dark:border-gray-600 rounded-md p-4 bg-white dark:bg-gray-800 max-h-96 overflow-y-auto">
+                                    <div className="border border-gray-300 dark:border-gray-600 rounded-md p-4 bg-white dark:bg-gray-800 h-full overflow-y-auto">
                                       {getSelectedLesson()?.contentMarkdown ? (
                                         <div 
                                           className="prose prose-sm max-w-none dark:prose-invert"
