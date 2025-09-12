@@ -21,6 +21,18 @@ export default function Navigation() {
               <div className="text-gray-500">Loading...</div>
             ) : session ? (
               <div className="flex items-center space-x-4">
+                <Link
+                  href="/courses"
+                  className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                >
+                  Courses
+                </Link>
+                <Link
+                  href="/pricing"
+                  className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                >
+                  Pricing
+                </Link>
                 <span className="text-gray-700 dark:text-gray-300">
                   Welcome, {session.user?.name || session.user?.email}
                 </span>
@@ -33,6 +45,12 @@ export default function Navigation() {
               </div>
             ) : (
               <div className="flex items-center space-x-4">
+                <Link
+                  href="/pricing"
+                  className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                >
+                  Pricing
+                </Link>
                 <Link
                   href="/auth/signin"
                   className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"

@@ -16,6 +16,7 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
     "@prisma/client": "^6.15.0",
+    "@stripe/stripe-js": "^7.9.0",
     "@types/formidable": "^3.4.5",
     "@types/nodemailer": "^7.0.1",
     "bcryptjs": "^3.0.2",
@@ -26,6 +27,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "sharp": "^0.34.3",
+    "stripe": "^18.5.0",
     "zod": "^4.1.5"
   },
   "devDependencies": {
