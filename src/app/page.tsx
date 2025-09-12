@@ -140,30 +140,55 @@ export default async function Home() {
                   }
 
                   return (
-                    <Link key={course.id} href={`/courses/${course.id}`}>
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                        <div className="w-12 h-12 bg-yellow-500 rounded-lg mb-4 flex items-center justify-center">
-                          <span className="text-2xl">{getCourseIcon(course.title)}</span>
+                    <div key={course.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                      {/* Course Thumbnail */}
+                      {course.thumbnail ? (
+                        <div className="w-full h-48 relative overflow-hidden">
+                          <img 
+                            src={course.thumbnail} 
+                            alt={course.title}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+                      ) : (
+                        <div className="w-full h-48 bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                          <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <span className="text-3xl">{getCourseIcon(course.title)}</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Course Content */}
+                      <div className="p-6">
+                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
                           {course.title}
                         </h3>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                          {course.goals}
-                        </p>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className={`text-sm font-medium ${getLevelColor(course.level)}`}>
-                            {course.level}
-                          </span>
-                          <span className={`text-sm font-medium ${getAccessColor(course.access)}`}>
-                            {course.access}
-                          </span>
+                        
+                        {/* Course Info */}
+                        <div className="space-y-2 mb-4">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-sm font-medium ${getLevelColor(course.level)}`}>
+                              {course.level}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {course.moduleCount} modules • {course.totalLessons} lessons
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {course.moduleCount} modules • {course.totalLessons} lessons
+                        
+                        {/* Price and Start Course Button */}
+                        <div className="flex items-center justify-between">
+                          <span className={`text-lg font-bold ${getAccessColor(course.access)}`}>
+                            {course.access === 'FREE' ? 'Free' : '$19.99'}
+                          </span>
+                          <Link href={`/courses/${course.id}`}>
+                            <button className="bg-yellow-500 text-black px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-colors">
+                              Start Course
+                            </button>
+                          </Link>
                         </div>
                       </div>
-                    </Link>
+                    </div>
                   )
                 })
               ) : (

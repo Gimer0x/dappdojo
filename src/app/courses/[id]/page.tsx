@@ -123,40 +123,49 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
             <div className="flex flex-col lg:flex-row gap-8">
               {/* Course Info */}
               <div className="flex-1">
-                <div className="flex items-center gap-4 mb-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getLevelColor(course.level)}`}>
-                    {course.level}
-                  </span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getAccessColor(course.access)}`}>
-                    {course.access}
-                  </span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {course.language}
-                  </span>
-                </div>
-                
-                <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-4">
+                <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-6">
                   {course.title}
                 </h1>
                 
-                <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
-                  {course.goals}
-                </p>
+                {/* Course Info */}
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-center gap-4">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getLevelColor(course.level)}`}>
+                      {course.level}
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {course.modules.length} Modules • {course.modules.reduce((total, module) => total + module.lessons.length, 0)} Lessons
+                    </span>
+                  </div>
+                </div>
                 
-                <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
-                  <span>{course.modules.length} Modules</span>
-                  <span>{course.modules.reduce((total, module) => total + module.lessons.length, 0)} Lessons</span>
+                {/* Price and Start Learning Button */}
+                <div className="flex items-center gap-4 mb-8">
+                  <span className={`text-2xl font-bold ${getAccessColor(course.access)}`}>
+                    {course.access === 'FREE' ? 'Free' : '$19.99'}
+                  </span>
+                  <button className="bg-yellow-500 text-black px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors">
+                    Start Learning
+                  </button>
                 </div>
               </div>
               
               {/* Course Thumbnail */}
-              {course.thumbnail && (
+              {course.thumbnail ? (
                 <div className="lg:w-80">
                   <img 
                     src={course.thumbnail} 
                     alt={course.title}
                     className="w-full h-48 object-cover rounded-lg shadow-lg"
                   />
+                </div>
+              ) : (
+                <div className="lg:w-80">
+                  <div className="w-full h-48 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg shadow-lg flex items-center justify-center">
+                    <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                      <span className="text-4xl">🔧</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
