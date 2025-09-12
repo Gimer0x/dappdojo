@@ -278,13 +278,45 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                 const completedInModule = module.lessons.filter(lesson => completedLessons.has(lesson.id)).length
                 const totalLessons = module.lessons.length
                 const isFirstModule = index === 0
-                const isLocked = !session || (!session.user.isPremium && !isFirstModule)
+                const isPremium = session && session.user.isPremium
+                const isLoggedIn = !!session
+                
+                // Define access rules based on user type
+                let moduleAccess = 'full' // full, view-only, locked
+                let showUpgradeLabel = false
+                
+                if (!isLoggedIn) {
+                  // Not logged users
+                  if (isFirstModule) {
+                    moduleAccess = 'view-only'
+                    showUpgradeLabel = false
+                  } else {
+                    moduleAccess = 'locked'
+                    showUpgradeLabel = true
+                  }
+                } else if (!isPremium) {
+                  // Logged in non-premium users
+                  if (isFirstModule) {
+                    moduleAccess = 'full'
+                    showUpgradeLabel = true
+                  } else {
+                    moduleAccess = 'locked'
+                    showUpgradeLabel = true
+                  }
+                } else {
+                  // Premium users
+                  moduleAccess = 'full'
+                  showUpgradeLabel = false
+                }
+                
+                const isLocked = moduleAccess === 'locked'
+                const isViewOnly = moduleAccess === 'view-only'
                 
                 return (
                   <div key={module.id} className={`bg-gray-50 dark:bg-gray-800 rounded-lg ${isLocked ? 'opacity-60' : ''}`}>
                     <div 
-                      className={`flex items-center justify-between p-4 ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700'} transition-colors`}
-                      onClick={() => !isLocked && toggleModule(module.id)}
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => toggleModule(module.id)}
                     >
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
@@ -293,32 +325,29 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           {completedInModule} of {totalLessons} completed
                         </span>
-                        {isLocked && (
+                        {showUpgradeLabel && (
                           <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 px-2 py-1 rounded-full">
-                            🔒 Premium Only
+                            Upgrade
+                          </span>
+                        )}
+                        {isViewOnly && (
+                          <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded-full">
+                            View Only
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        {isLocked ? (
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            🔒 Locked
-                          </span>
-                        ) : (
-                          <>
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
-                              {collapsedModules.has(module.id) ? 'Click to expand' : 'Click to collapse'}
-                            </span>
-                            <svg 
-                              className={`w-5 h-5 text-gray-500 transition-transform ${collapsedModules.has(module.id) ? 'rotate-180' : ''}`}
-                              fill="none" 
-                              stroke="currentColor" 
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </>
-                        )}
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {collapsedModules.has(module.id) ? 'Click to expand' : 'Click to collapse'}
+                        </span>
+                        <svg 
+                          className={`w-5 h-5 text-gray-500 transition-transform ${collapsedModules.has(module.id) ? 'rotate-180' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                       </div>
                     </div>
                   
@@ -328,41 +357,38 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                         {module.lessons.map((lesson, lessonIndex) => {
                           const isCompleted = completedLessons.has(lesson.id)
                           const isLessonLocked = isLocked
+                          const isLessonViewOnly = isViewOnly
+                          const isLessonBlocked = isViewOnly || (isLoggedIn && !isPremium && !isFirstModule)
                           
                           return (
                             <div key={lesson.id} className={`flex items-center gap-3 p-2 bg-white dark:bg-gray-700 rounded ${isLessonLocked ? 'opacity-60' : ''}`}>
                               <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
                                 isCompleted 
                                   ? 'bg-green-500' 
-                                  : isLessonLocked
+                                  : isLessonBlocked
                                   ? 'bg-gray-200 dark:bg-gray-500'
                                   : 'bg-gray-300 dark:bg-gray-600'
                               }`}>
                                 <span className={`text-xs ${
                                   isCompleted 
                                     ? 'text-white' 
-                                    : isLessonLocked
+                                    : isLessonBlocked
                                     ? 'text-gray-400 dark:text-gray-600'
                                     : 'text-gray-600 dark:text-gray-300'
                                 }`}>
-                                  {isLessonLocked ? '🔒' : lessonIndex + 1}
+                                  {lessonIndex + 1}
                                 </span>
                               </div>
                               <div className="flex-1">
-                                <span className={`text-sm font-medium ${isLessonLocked ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-white'}`}>
+                                <span className={`text-sm font-medium ${isLessonBlocked ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-white'}`}>
                                   {lesson.title}
                                 </span>
-                                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 capitalize">
+                                <span className={`ml-2 text-xs capitalize ${isLessonBlocked ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}`}>
                                   ({lesson.type})
                                 </span>
-                                {isLessonLocked && (
-                                  <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">
-                                    Premium Only
-                                  </span>
-                                )}
                               </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {isLessonLocked ? '🔒' : lesson.type === 'intro' ? '📖' : lesson.type === 'quiz' ? '❓' : '💻'}
+                                {lesson.type === 'intro' ? '📖' : lesson.type === 'quiz' ? '❓' : '💻'}
                               </div>
                             </div>
                           )
