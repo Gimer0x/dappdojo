@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile } from 'fs/promises'
 import { join } from 'path'
-import { verifyToken } from '@/lib/auth'
+import { verifyToken } from '@/lib/auth-utils'
 import { resizeImageToThumbnail } from '@/lib/serverImageUtils'
 import { generateThumbnailFilename } from '@/lib/imageUtils'
 

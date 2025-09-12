@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
+import { verifyToken } from '@/lib/auth-utils'
 import { z } from 'zod'
 
 // Validation schema for course creation
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Validation error',
-        details: error.errors
+        details: error.issues
       }, { status: 400 })
     }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 
 // Validation schema for course update
@@ -36,16 +37,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
+    // Verify authentication using NextAuth.js
+    const session = await getServerSession(authOptions)
     
-    if (!payload) {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -77,7 +72,7 @@ export async function GET(
     }
 
     // Check if user is admin or course creator
-    if (payload.role !== 'ADMIN' && course.creatorId !== payload.userId) {
+    if (session.user.role !== 'ADMIN' && course.creatorId !== session.user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -96,16 +91,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
+    // Verify authentication using NextAuth.js
+    const session = await getServerSession(authOptions)
     
-    if (!payload || payload.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -189,7 +178,7 @@ export async function PUT(
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Validation error',
-        details: error.errors
+        details: error.issues
       }, { status: 400 })
     }
 
@@ -204,16 +193,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
+    // Verify authentication using NextAuth.js
+    const session = await getServerSession(authOptions)
     
-    if (!payload || payload.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

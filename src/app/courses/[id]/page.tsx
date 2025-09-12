@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 
 interface Course {
   id: string
@@ -52,7 +53,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const [course, setCourse] = useState<Course | null>(null)
   const [loading, setLoading] = useState(true)
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set())
-  const [isLoggedIn, setIsLoggedIn] = useState(false) // Mock login state
+  const { data: session, status } = useSession()
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set()) // Mock completion status
 
   useEffect(() => {
@@ -205,14 +206,17 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                   <button 
                     className="bg-yellow-500 text-black px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors"
                     onClick={() => {
-                      if (!isLoggedIn) {
-                        alert('Please log in to start learning!')
+                      if (!session) {
+                        window.location.href = '/auth/signin'
+                      } else if (!session.user.isPremium) {
+                        // Redirect to upgrade page or show upgrade modal
+                        alert('Upgrade to premium to access all modules!')
                       } else {
                         alert('Starting course...')
                       }
                     }}
                   >
-                    {isLoggedIn ? 'Start Learning' : 'Upgrade to Premium'}
+                    {!session ? 'Upgrade to Premium' : !session.user.isPremium ? 'Upgrade to Premium' : 'Start Learning'}
                   </button>
                 </div>
               </div>
@@ -258,33 +262,48 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
               {course.modules.map((module, index) => {
                 const completedInModule = module.lessons.filter(lesson => completedLessons.has(lesson.id)).length
                 const totalLessons = module.lessons.length
+                const isFirstModule = index === 0
+                const isLocked = !session || (!session.user.isPremium && !isFirstModule)
                 
                 return (
-                  <div key={module.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div key={module.id} className={`bg-gray-50 dark:bg-gray-800 rounded-lg ${isLocked ? 'opacity-60' : ''}`}>
                     <div 
-                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      onClick={() => toggleModule(module.id)}
+                      className={`flex items-center justify-between p-4 ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700'} transition-colors`}
+                      onClick={() => !isLocked && toggleModule(module.id)}
                     >
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                          Module {index + 1}: {module.description}
+                          Module {index + 1}: {module.title}
                         </h3>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           {completedInModule} of {totalLessons} completed
                         </span>
+                        {isLocked && (
+                          <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 px-2 py-1 rounded-full">
+                            🔒 Premium Only
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {collapsedModules.has(module.id) ? 'Click to expand' : 'Click to collapse'}
-                        </span>
-                        <svg 
-                          className={`w-5 h-5 text-gray-500 transition-transform ${collapsedModules.has(module.id) ? 'rotate-180' : ''}`}
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
+                        {isLocked ? (
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            🔒 Locked
+                          </span>
+                        ) : (
+                          <>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {collapsedModules.has(module.id) ? 'Click to expand' : 'Click to collapse'}
+                            </span>
+                            <svg 
+                              className={`w-5 h-5 text-gray-500 transition-transform ${collapsedModules.has(module.id) ? 'rotate-180' : ''}`}
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </>
+                        )}
                       </div>
                     </div>
                   
@@ -293,31 +312,42 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                       <div className="space-y-2">
                         {module.lessons.map((lesson, lessonIndex) => {
                           const isCompleted = completedLessons.has(lesson.id)
+                          const isLessonLocked = isLocked
+                          
                           return (
-                            <div key={lesson.id} className="flex items-center gap-3 p-2 bg-white dark:bg-gray-700 rounded">
+                            <div key={lesson.id} className={`flex items-center gap-3 p-2 bg-white dark:bg-gray-700 rounded ${isLessonLocked ? 'opacity-60' : ''}`}>
                               <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
                                 isCompleted 
                                   ? 'bg-green-500' 
+                                  : isLessonLocked
+                                  ? 'bg-gray-200 dark:bg-gray-500'
                                   : 'bg-gray-300 dark:bg-gray-600'
                               }`}>
                                 <span className={`text-xs ${
                                   isCompleted 
                                     ? 'text-white' 
+                                    : isLessonLocked
+                                    ? 'text-gray-400 dark:text-gray-600'
                                     : 'text-gray-600 dark:text-gray-300'
                                 }`}>
-                                  {lessonIndex + 1}
+                                  {isLessonLocked ? '🔒' : lessonIndex + 1}
                                 </span>
                               </div>
                               <div className="flex-1">
-                                <span className="text-sm font-medium text-gray-800 dark:text-white">
+                                <span className={`text-sm font-medium ${isLessonLocked ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-white'}`}>
                                   {lesson.title}
                                 </span>
                                 <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 capitalize">
                                   ({lesson.type})
                                 </span>
+                                {isLessonLocked && (
+                                  <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-400">
+                                    Premium Only
+                                  </span>
+                                )}
                               </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {lesson.type === 'intro' ? '📖' : lesson.type === 'quiz' ? '❓' : '💻'}
+                                {isLessonLocked ? '🔒' : lesson.type === 'intro' ? '📖' : lesson.type === 'quiz' ? '❓' : '💻'}
                               </div>
                             </div>
                           )
@@ -335,14 +365,17 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
               <button 
                 className="bg-yellow-500 text-black px-8 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors"
                 onClick={() => {
-                  if (!isLoggedIn) {
-                    alert('Please log in to start learning!')
+                  if (!session) {
+                    window.location.href = '/auth/signin'
+                  } else if (!session.user.isPremium) {
+                    // Redirect to upgrade page or show upgrade modal
+                    alert('Upgrade to premium to access all modules!')
                   } else {
                     alert('Starting course...')
                   }
                 }}
               >
-                {isLoggedIn ? 'Start Learning' : 'Upgrade to Premium'}
+                {!session ? 'Upgrade to Premium' : !session.user.isPremium ? 'Upgrade to Premium' : 'Start Learning'}
               </button>
             </div>
           </div>

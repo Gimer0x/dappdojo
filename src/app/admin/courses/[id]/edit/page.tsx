@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import ImageUpload from '@/components/ImageUpload'
 import { renderMarkdown, openMarkdownPreviewInNewWindow } from '@/lib/markdownUtils'
@@ -46,6 +47,7 @@ interface Course {
 }
 
 export default function EditCourse() {
+  const { data: session, status } = useSession()
   const [user, setUser] = useState<User | null>(null)
   const [course, setCourse] = useState<Course | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -106,9 +108,9 @@ export default function EditCourse() {
 
   const getSelectedLesson = () => {
     if (!selectedLesson) return null
-    const module = modules.find(m => m.id === selectedLesson.moduleId)
-    if (!module) return null
-    return module.lessons.find(l => l.id === selectedLesson.lessonId) || null
+    const moduleData = modules.find(m => m.id === selectedLesson.moduleId)
+    if (!moduleData) return null
+    return moduleData.lessons.find(l => l.id === selectedLesson.lessonId) || null
   }
 
   const getSelectedModule = () => {
@@ -118,10 +120,10 @@ export default function EditCourse() {
 
   // Helper function to get lesson number within a module (starts from 1 per module)
   const getModuleLessonNumber = (targetModuleId: string, targetLessonId: string) => {
-    const module = modules.find(m => m.id === targetModuleId)
-    if (!module) return 0
+    const moduleData = modules.find(m => m.id === targetModuleId)
+    if (!moduleData) return 0
     
-    const lessonIndex = module.lessons.findIndex(l => l.id === targetLessonId)
+    const lessonIndex = moduleData.lessons.findIndex(l => l.id === targetLessonId)
     return lessonIndex + 1
   }
 
@@ -349,17 +351,15 @@ export default function EditCourse() {
 
   // Save individual module
   const saveModule = async (moduleId: string) => {
-    const module = modules.find(m => m.id === moduleId)
-    if (!module) return
+    const moduleData = modules.find(m => m.id === moduleId)
+    if (!moduleData) return
 
     setIsSavingModule(moduleId)
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch(`/api/courses/${courseId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           title: courseTitle,
@@ -396,12 +396,10 @@ export default function EditCourse() {
   const saveLesson = async (moduleId: string, lessonId: string) => {
     setIsSavingLesson(lessonId)
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch(`/api/courses/${courseId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           title: courseTitle,
@@ -439,36 +437,28 @@ export default function EditCourse() {
   const courseId = params.id as string
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-
-    if (!token || !userData) {
+    // Check if user is authenticated with NextAuth.js
+    if (status === 'loading') return // Still loading
+    
+    if (!session || session.user.role !== 'ADMIN') {
       router.push('/admin/login')
       return
     }
 
-    try {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
-    } catch (error) {
-      console.error('Error parsing user data:', error)
-      router.push('/admin/login')
-      return
-    }
+    setUser({
+      id: session.user.id,
+      email: session.user.email,
+      name: session.user.name,
+      role: session.user.role
+    })
 
     // Fetch course data
     fetchCourse()
-  }, [router, courseId])
+  }, [router, courseId, session, status])
 
   const fetchCourse = async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/courses/${courseId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch(`/api/courses/${courseId}`)
 
       if (response.ok) {
         const data = await response.json()
@@ -521,11 +511,11 @@ export default function EditCourse() {
   }
 
   const removeModule = (moduleId: string) => {
-    const module = modules.find(m => m.id === moduleId)
-    if (!module) return
+    const moduleData = modules.find(m => m.id === moduleId)
+    if (!moduleData) return
 
-    const moduleTitle = module.title || `Module ${modules.indexOf(module) + 1}`
-    const lessonCount = module.lessons.length
+    const moduleTitle = moduleData.title || `Module ${modules.indexOf(moduleData) + 1}`
+    const lessonCount = moduleData.lessons.length
     
     const confirmMessage = lessonCount > 0 
       ? `Are you sure you want to delete "${moduleTitle}"? This will also delete ${lessonCount} lesson${lessonCount === 1 ? '' : 's'} in this module. This action cannot be undone.`
@@ -551,8 +541,8 @@ export default function EditCourse() {
   }
 
   const addLesson = (moduleId: string, type: 'intro' | 'quiz' | 'challenge') => {
-    const module = modules.find(m => m.id === moduleId)
-    if (!module) return
+    const moduleData = modules.find(m => m.id === moduleId)
+    if (!moduleData) return
 
     const lessonTypeNames = {
       intro: 'Introduction',
@@ -563,12 +553,12 @@ export default function EditCourse() {
     const newLesson: Lesson = {
       id: `lesson-${Date.now()}`,
       type,
-      title: `${lessonTypeNames[type]} ${module.lessons.length + 1}`,
+      title: `${lessonTypeNames[type]} ${moduleData.lessons.length + 1}`,
       contentMarkdown: '',
       initialCode: '',
       solutionCode: '',
       tests: '',
-      order: module.lessons.length + 1
+      order: moduleData.lessons.length + 1
     }
 
     setModules(modules.map(m => 
@@ -582,10 +572,10 @@ export default function EditCourse() {
   }
 
   const removeLesson = (moduleId: string, lessonId: string) => {
-    const module = modules.find(m => m.id === moduleId)
-    if (!module) return
+    const moduleData = modules.find(m => m.id === moduleId)
+    if (!moduleData) return
 
-    const lesson = module.lessons.find(l => l.id === lessonId)
+    const lesson = moduleData.lessons.find(l => l.id === lessonId)
     if (!lesson) return
 
     const lessonTitle = lesson.title || 'Untitled Lesson'
@@ -634,15 +624,11 @@ export default function EditCourse() {
     }
     
     try {
-      const token = localStorage.getItem('token')
       const formData = new FormData()
       formData.append('file', file)
 
       const response = await fetch('/api/upload/thumbnail', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData
       })
 
@@ -675,17 +661,17 @@ export default function EditCourse() {
     }
 
     // Validate modules
-    for (const module of modules) {
-      if (!module.title.trim()) {
-        setMessage(`Module ${modules.indexOf(module) + 1} title is required`)
+    for (const moduleData of modules) {
+      if (!moduleData.title.trim()) {
+        setMessage(`Module ${modules.indexOf(moduleData) + 1} title is required`)
         setMessageType('error')
         return
       }
       
       // Validate lessons within each module
-      for (const lesson of module.lessons) {
+      for (const lesson of moduleData.lessons) {
         if (!lesson.title.trim()) {
-          setMessage(`Lesson title is required in Module ${modules.indexOf(module) + 1}`)
+          setMessage(`Lesson title is required in Module ${modules.indexOf(moduleData) + 1}`)
           setMessageType('error')
           return
         }
@@ -696,8 +682,6 @@ export default function EditCourse() {
     setMessage('')
 
     try {
-      const token = localStorage.getItem('token')
-      
       // Debug: Log the data being sent
       const requestData = {
         title: courseTitle,
@@ -714,8 +698,7 @@ export default function EditCourse() {
       const response = await fetch(`/api/courses/${courseId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestData),
       })

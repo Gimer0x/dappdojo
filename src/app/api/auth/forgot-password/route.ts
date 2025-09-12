@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { generatePasswordResetToken } from '@/lib/auth'
+import { generatePasswordResetToken } from '@/lib/auth-utils'
 import { createDevEmailService } from '@/lib/email'
 import { forgotPasswordSchema, RateLimiter } from '@/lib/validation'
 

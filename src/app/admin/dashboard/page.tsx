@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
 interface User {
@@ -34,6 +35,7 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
+  const { data: session, status } = useSession()
   const [user, setUser] = useState<User | null>(null)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
@@ -57,35 +59,27 @@ export default function AdminDashboard() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
+    // Check if user is authenticated with NextAuth.js
+    if (status === 'loading') return // Still loading
     
-    if (!token || !userData) {
+    if (!session || session.user.role !== 'ADMIN') {
       router.push('/admin/login')
       return
     }
 
-    try {
-      const user = JSON.parse(userData)
-      setUser(user)
-    } catch (error) {
-      router.push('/admin/login')
-    }
-  }, [router])
+    setUser({
+      id: session.user.id,
+      email: session.user.email,
+      name: session.user.name,
+      role: session.user.role
+    })
+  }, [router, session, status])
 
   // Fetch course statistics
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('token')
-        if (!token) return
-
-        const response = await fetch('/api/courses', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+        const response = await fetch('/api/courses')
 
         if (response.ok) {
           const data = await response.json()
@@ -159,12 +153,10 @@ export default function AdminDashboard() {
     setMessage('')
 
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ currentPassword, newPassword }),
       })

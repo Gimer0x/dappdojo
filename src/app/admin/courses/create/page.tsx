@@ -301,7 +301,7 @@ export default function CreateCourse() {
                     <ImageUpload
                       onImageSelect={handleThumbnailSelect}
                       currentImage={courseThumbnail}
-                      error={thumbnailError}
+                      error={thumbnailError || undefined}
                       disabled={isCreating}
                     />
                   </div>
