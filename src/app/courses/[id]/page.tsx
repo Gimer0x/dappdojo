@@ -289,7 +289,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                     </div>
                   
                   {!collapsedModules.has(module.id) && (
-                    <div className="px-4 pb-4">
+                    <div className="px-4 pt-4 pb-4">
                       <div className="space-y-2">
                         {module.lessons.map((lesson, lessonIndex) => {
                           const isCompleted = completedLessons.has(lesson.id)
