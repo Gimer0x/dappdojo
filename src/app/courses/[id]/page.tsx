@@ -1,5 +1,8 @@
+'use client'
+
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { useState, useEffect } from 'react'
 
 interface Course {
   id: string
@@ -45,9 +48,66 @@ async function getCourse(id: string): Promise<Course | null> {
   }
 }
 
-export default async function CoursePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const course = await getCourse(id)
+export default function CoursePage({ params }: { params: Promise<{ id: string }> }) {
+  const [course, setCourse] = useState<Course | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set())
+  const [isLoggedIn, setIsLoggedIn] = useState(false) // Mock login state
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set()) // Mock completion status
+
+  useEffect(() => {
+    async function fetchCourse() {
+      try {
+        const resolvedParams = await params
+        const courseData = await getCourse(resolvedParams.id)
+        setCourse(courseData)
+        if (!courseData) {
+          notFound()
+        } else {
+          // Initialize all modules as collapsed by default
+          const allModuleIds = new Set(courseData.modules.map(module => module.id))
+          setCollapsedModules(allModuleIds)
+          
+          // Mock some completed lessons (first lesson of each module)
+          const mockCompletedLessons = new Set<string>()
+          courseData.modules.forEach(module => {
+            if (module.lessons.length > 0) {
+              mockCompletedLessons.add(module.lessons[0].id)
+            }
+          })
+          setCompletedLessons(mockCompletedLessons)
+        }
+      } catch (error) {
+        console.error('Error fetching course:', error)
+        notFound()
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchCourse()
+  }, [params])
+
+  const toggleModule = (moduleId: string) => {
+    const newCollapsed = new Set(collapsedModules)
+    if (newCollapsed.has(moduleId)) {
+      newCollapsed.delete(moduleId)
+    } else {
+      newCollapsed.add(moduleId)
+    }
+    setCollapsedModules(newCollapsed)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading course...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!course) {
     notFound()
@@ -139,13 +199,19 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
                   </div>
                 </div>
                 
-                {/* Price and Start Learning Button */}
+                {/* Start Learning Button */}
                 <div className="flex items-center gap-4 mb-8">
-                  <span className={`text-2xl font-bold ${getAccessColor(course.access)}`}>
-                    {course.access === 'FREE' ? 'Free' : '$19.99'}
-                  </span>
-                  <button className="bg-yellow-500 text-black px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors">
-                    Start Learning
+                  <button 
+                    className="bg-yellow-500 text-black px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors"
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        alert('Please log in to start learning!')
+                      } else {
+                        alert('Starting course...')
+                      }
+                    }}
+                  >
+                    {isLoggedIn ? 'Start Learning' : 'Upgrade to Premium'}
                   </button>
                 </div>
               </div>
@@ -179,52 +245,96 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
               Course Modules
             </h2>
             
-            <div className="space-y-6">
+            <div className="space-y-4">
               {course.modules.map((module, index) => (
-                <div key={module.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
-                      Module {index + 1}: {module.title}
-                    </h3>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {module.lessons.length} lessons
-                    </span>
+                <div key={module.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div 
+                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    onClick={() => toggleModule(module.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                        Module {index + 1}: {module.description}
+                      </h3>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {module.lessons.length} lessons
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {collapsedModules.has(module.id) ? 'Click to expand' : 'Click to collapse'}
+                      </span>
+                      <svg 
+                        className={`w-5 h-5 text-gray-500 transition-transform ${collapsedModules.has(module.id) ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                   
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    {module.description}
-                  </p>
-                  
-                  <div className="space-y-2">
-                    {module.lessons.map((lesson, lessonIndex) => (
-                      <div key={lesson.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-700 rounded-lg">
-                        <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                          <span className="text-xs text-gray-600 dark:text-gray-300">
-                            {lessonIndex + 1}
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <span className="text-sm font-medium text-gray-800 dark:text-white">
-                            {lesson.title}
-                          </span>
-                          <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 capitalize">
-                            ({lesson.type})
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {lesson.type === 'intro' ? '📖' : lesson.type === 'quiz' ? '❓' : '💻'}
-                        </div>
+                  {!collapsedModules.has(module.id) && (
+                    <div className="px-4 pb-4">
+                      <div className="space-y-2">
+                        {module.lessons.map((lesson, lessonIndex) => {
+                          const isCompleted = completedLessons.has(lesson.id)
+                          return (
+                            <div key={lesson.id} className="flex items-center gap-3 p-2 bg-white dark:bg-gray-700 rounded">
+                              <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                                isCompleted 
+                                  ? 'bg-green-500' 
+                                  : 'bg-gray-300 dark:bg-gray-600'
+                              }`}>
+                                {isCompleted ? (
+                                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                ) : (
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">
+                                    {lessonIndex + 1}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <span className={`text-sm font-medium ${
+                                  isCompleted 
+                                    ? 'text-green-600 dark:text-green-400 line-through' 
+                                    : 'text-gray-800 dark:text-white'
+                                }`}>
+                                  {lesson.title}
+                                </span>
+                                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 capitalize">
+                                  ({lesson.type})
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {lesson.type === 'intro' ? '📖' : lesson.type === 'quiz' ? '❓' : '💻'}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
             
             {/* Start Learning Button */}
             <div className="mt-8 text-center">
-              <button className="bg-yellow-500 text-black px-8 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors">
-                Start Learning
+              <button 
+                className="bg-yellow-500 text-black px-8 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition-colors"
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    alert('Please log in to start learning!')
+                  } else {
+                    alert('Starting course...')
+                  }
+                }}
+              >
+                {isLoggedIn ? 'Start Learning' : 'Upgrade to Premium'}
               </button>
             </div>
           </div>
