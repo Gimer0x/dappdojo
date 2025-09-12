@@ -255,34 +255,38 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
             </div>
             
             <div className="space-y-4">
-              {course.modules.map((module, index) => (
-                <div key={module.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div 
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    onClick={() => toggleModule(module.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                        Module {index + 1}: {module.description}
-                      </h3>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {module.lessons.length} lessons
-                      </span>
+              {course.modules.map((module, index) => {
+                const completedInModule = module.lessons.filter(lesson => completedLessons.has(lesson.id)).length
+                const totalLessons = module.lessons.length
+                
+                return (
+                  <div key={module.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div 
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => toggleModule(module.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                          Module {index + 1}: {module.description}
+                        </h3>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {completedInModule} of {totalLessons} completed
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {collapsedModules.has(module.id) ? 'Click to expand' : 'Click to collapse'}
+                        </span>
+                        <svg 
+                          className={`w-5 h-5 text-gray-500 transition-transform ${collapsedModules.has(module.id) ? 'rotate-180' : ''}`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {collapsedModules.has(module.id) ? 'Click to expand' : 'Click to collapse'}
-                      </span>
-                      <svg 
-                        className={`w-5 h-5 text-gray-500 transition-transform ${collapsedModules.has(module.id) ? 'rotate-180' : ''}`}
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
                   
                   {!collapsedModules.has(module.id) && (
                     <div className="px-4 pb-4">
@@ -321,8 +325,9 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                       </div>
                     </div>
                   )}
-                </div>
-              ))}
+                  </div>
+                )
+              })}
             </div>
             
             {/* Start Learning Button */}
