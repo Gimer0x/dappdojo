@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyToken } from '@/lib/auth-utils'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 
 // Validation schema for course creation
@@ -11,7 +12,7 @@ const createCourseSchema = z.object({
   level: z.enum(['beginner', 'intermediate', 'advanced']),
   access: z.enum(['free', 'paid']),
   status: z.enum(['active', 'deactivated']),
-  thumbnail: z.string().optional(),
+  thumbnail: z.string().nullable().optional(),
   modules: z.array(z.object({
     id: z.string(),
     title: z.string().min(1, 'Module title is required'),
@@ -22,25 +23,19 @@ const createCourseSchema = z.object({
       title: z.string().min(1, 'Lesson title is required'),
       contentMarkdown: z.string().optional(),
       youtubeUrl: z.string().nullable().optional(),
-      initialCode: z.string().optional(),
-      solutionCode: z.string().optional(),
-      tests: z.string().optional(),
+      initialCode: z.string().nullable().optional(),
+      solutionCode: z.string().nullable().optional(),
+      tests: z.string().nullable().optional(),
     }))
   })).optional().default([])
 })
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
+    // Verify authentication using NextAuth.js
+    const session = await getServerSession(authOptions)
     
-    if (!payload || payload.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -58,7 +53,7 @@ export async function POST(request: NextRequest) {
         access: validatedData.access.toUpperCase() as any,
         status: validatedData.status.toUpperCase() as any,
         thumbnail: validatedData.thumbnail || null,
-        creatorId: payload.userId,
+        creatorId: session.user.id,
         modules: {
           create: validatedData.modules.map((module, moduleIndex) => ({
             title: module.title,
@@ -114,16 +109,10 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
+    // Verify authentication using NextAuth.js
+    const session = await getServerSession(authOptions)
     
-    if (!payload) {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

@@ -1,27 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile } from 'fs/promises'
 import { join } from 'path'
-import { verifyToken } from '@/lib/auth-utils'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { resizeImageToThumbnail } from '@/lib/serverImageUtils'
 import { generateThumbnailFilename } from '@/lib/imageUtils'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
+    // Verify authentication using NextAuth.js
+    const session = await getServerSession(authOptions)
     
-    if (!payload || payload.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get the form data
-    const data = await request.formData()
+    // Try to parse form data with error handling
+    let data: FormData
+    try {
+      data = await request.formData()
+    } catch (error) {
+      console.error('FormData parsing failed:', error)
+      return NextResponse.json({ 
+        error: 'Failed to parse form data. Please try again.' 
+      }, { status: 400 })
+    }
+
     const file: File | null = data.get('file') as unknown as File
 
     if (!file) {
@@ -44,9 +48,17 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    // Convert file to buffer with error handling
+    let buffer: Buffer
+    try {
+      const bytes = await file.arrayBuffer()
+      buffer = Buffer.from(bytes)
+    } catch (error) {
+      console.error('File buffer conversion failed:', error)
+      return NextResponse.json({ 
+        error: 'Failed to process file. Please try again.' 
+      }, { status: 400 })
+    }
 
     // Resize image to thumbnail dimensions
     const resizeResult = await resizeImageToThumbnail(buffer)

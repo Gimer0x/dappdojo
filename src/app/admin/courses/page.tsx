@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 
 interface User {
@@ -43,7 +44,7 @@ interface Course {
 }
 
 export default function CoursesList() {
-  const [user, setUser] = useState<User | null>(null)
+  const { data: session, status } = useSession()
   const [courses, setCourses] = useState<Course[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -52,32 +53,17 @@ export default function CoursesList() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-    
-    if (!token || !userData) {
+    if (status === 'loading') return
+    if (!session || session.user.role !== 'ADMIN') {
       router.push('/admin/login')
       return
     }
-
-    try {
-      const user = JSON.parse(userData)
-      setUser(user)
-      fetchCourses()
-    } catch (error) {
-      router.push('/admin/login')
-    }
-  }, [router])
+    fetchCourses()
+  }, [router, session, status])
 
   const fetchCourses = async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/courses', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch('/api/courses')
 
       if (response.ok) {
         const data = await response.json()
@@ -93,9 +79,7 @@ export default function CoursesList() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    router.push('/admin/login')
+    signOut({ callbackUrl: '/admin/login' })
   }
 
   const handleDeleteCourse = async (courseId: string, courseTitle: string) => {
@@ -106,12 +90,8 @@ export default function CoursesList() {
     setDeletingCourseId(courseId)
     
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch(`/api/courses/${courseId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        method: 'DELETE'
       })
 
       if (response.ok) {
@@ -163,11 +143,19 @@ export default function CoursesList() {
     }
   }
 
-  if (!user) {
+  if (status === 'loading') {
     return <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
         <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+      </div>
+    </div>
+  }
+
+  if (!session) {
+    return <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-gray-600 dark:text-gray-400">Redirecting to login...</p>
       </div>
     </div>
   }
@@ -196,7 +184,7 @@ export default function CoursesList() {
             
             <div className="flex items-center space-x-4">
               <span className="text-white text-sm">
-                Welcome, {user.name || user.email}
+                Welcome, {session.user.name || session.user.email}
               </span>
               <button
                 onClick={handleLogout}

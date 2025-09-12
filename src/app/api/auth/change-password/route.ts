@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyPassword, hashPassword, verifyToken } from '@/lib/auth-utils'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { verifyPassword, hashPassword } from '@/lib/auth-utils'
 import { passwordChangeSchema } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
@@ -18,28 +20,19 @@ export async function POST(request: NextRequest) {
 
     const { currentPassword, newPassword } = validationResult.data
 
-    // Get authorization header
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Authorization token required' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-    const payload = verifyToken(token)
+    // Verify authentication using NextAuth.js
+    const session = await getServerSession(authOptions)
     
-    if (!payload) {
+    if (!session) {
       return NextResponse.json(
-        { error: 'Invalid or expired token' },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
     // Find user
     const user = await prisma.user.findUnique({
-      where: { id: payload.userId }
+      where: { id: session.user.id }
     })
 
     if (!user) {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 
 interface User {
@@ -36,7 +36,6 @@ interface DashboardStats {
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession()
-  const [user, setUser] = useState<User | null>(null)
   const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -67,12 +66,7 @@ export default function AdminDashboard() {
       return
     }
 
-    setUser({
-      id: session.user.id,
-      email: session.user.email,
-      name: session.user.name,
-      role: session.user.role
-    })
+    // User data is now available through session
   }, [router, session, status])
 
   // Fetch course statistics
@@ -112,15 +106,13 @@ export default function AdminDashboard() {
       }
     }
 
-    if (user) {
+    if (session) {
       fetchStats()
     }
-  }, [user])
+  }, [session])
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    router.push('/admin/login')
+    signOut({ callbackUrl: '/admin/login' })
   }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -182,11 +174,19 @@ export default function AdminDashboard() {
     }
   }
 
-  if (!user) {
+  if (status === 'loading') {
     return <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
         <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+      </div>
+    </div>
+  }
+
+  if (!session) {
+    return <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-gray-600 dark:text-gray-400">Redirecting to login...</p>
       </div>
     </div>
   }
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
             
             <div className="flex items-center space-x-4">
               <span className="text-white text-sm">
-                Welcome, {user.name || user.email}
+                Welcome, {session.user.name || session.user.email}
               </span>
               <button
                 onClick={() => setShowPasswordChange(true)}

@@ -48,7 +48,6 @@ interface Course {
 
 export default function EditCourse() {
   const { data: session, status } = useSession()
-  const [user, setUser] = useState<User | null>(null)
   const [course, setCourse] = useState<Course | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -445,12 +444,7 @@ export default function EditCourse() {
       return
     }
 
-    setUser({
-      id: session.user.id,
-      email: session.user.email,
-      name: session.user.name,
-      role: session.user.role
-    })
+    // User data is now available through session
 
     // Fetch course data
     fetchCourse()
@@ -623,25 +617,124 @@ export default function EditCourse() {
       return
     }
     
+    // Check file size before processing (5MB limit)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      setThumbnailError('File size must be less than 5MB')
+      return
+    }
+    
+    // Check if file is empty
+    if (file.size === 0) {
+      setThumbnailError('File is empty')
+      return
+    }
+    
+    // Validate file type more strictly
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
+    if (!allowedTypes.includes(file.type)) {
+      setThumbnailError('Only JPG and PNG images are allowed')
+      return
+    }
+    
+    // Check if file is accessible
+    if (!file.name || file.name.trim() === '') {
+      setThumbnailError('Invalid file name')
+      return
+    }
+    
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/upload/thumbnail', {
-        method: 'POST',
-        body: formData
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        
+        // Set up timeout for FileReader
+        const readerTimeout = setTimeout(() => {
+          reader.abort()
+          reject(new Error('File reading timed out'))
+        }, 10000)
+        
+        reader.onload = () => {
+          clearTimeout(readerTimeout)
+          const result = reader.result as string
+          if (!result || result.length === 0) {
+            reject(new Error('File reading resulted in empty data'))
+            return
+          }
+          resolve(result)
+        }
+        
+        reader.onerror = (error) => {
+          clearTimeout(readerTimeout)
+          reject(new Error(`Failed to read file: ${error.type || 'Unknown error'}`))
+        }
+        
+        reader.onabort = () => {
+          clearTimeout(readerTimeout)
+          reject(new Error('File reading was aborted'))
+        }
+        
+        reader.readAsDataURL(file)
       })
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+      // Try base64 upload first, fallback to FormData if needed
+      let response: Response
+      try {
+        response = await fetch('/api/upload/base64', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+            fileType: file.type,
+            fileData: base64
+          }),
+          signal: controller.signal
+        })
+      } catch (base64Error) {
+        // Fallback to FormData upload
+        const formData = new FormData()
+        formData.append('file', file)
+        
+        response = await fetch('/api/upload/simple', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        })
+      }
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        setThumbnailError(`Upload failed: ${response.status} ${errorText}`)
+        return
+      }
 
       const data = await response.json()
 
-      if (response.ok) {
+      if (data.success) {
         setCourseThumbnail(data.url)
         setHasUnsavedChanges(true)
+        setThumbnailError(null)
       } else {
         setThumbnailError(data.error || 'Failed to upload thumbnail')
       }
     } catch (error) {
-      setThumbnailError('Failed to upload thumbnail')
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          setThumbnailError('Upload timed out. Please try again.')
+        } else {
+          setThumbnailError(`Upload failed: ${error.message}`)
+        }
+      } else {
+        setThumbnailError('Upload failed. Please try again.')
+      }
     }
   }
 
@@ -735,8 +828,25 @@ export default function EditCourse() {
     )
   }
 
-  if (!user) {
-    return null
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-gray-400">Redirecting to login...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -752,7 +862,7 @@ export default function EditCourse() {
               </div>
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {user.email}
+                  {session.user.email}
                 </span>
                 <Link
                   href="/admin/courses"

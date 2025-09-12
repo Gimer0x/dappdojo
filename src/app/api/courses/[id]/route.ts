@@ -12,23 +12,23 @@ const updateCourseSchema = z.object({
   level: z.enum(['beginner', 'intermediate', 'advanced']),
   access: z.enum(['free', 'paid']),
   status: z.enum(['active', 'deactivated']),
-  thumbnail: z.string().optional(),
+  thumbnail: z.string().nullable().optional(),
   modules: z.array(z.object({
     id: z.string(),
     title: z.string().min(1, 'Module title is required'),
     description: z.string().optional(),
     order: z.number(),
-          lessons: z.array(z.object({
-        id: z.string(),
-        type: z.enum(['intro', 'quiz', 'challenge']),
-        title: z.string().min(1, 'Lesson title is required'),
-        contentMarkdown: z.string().optional(),
-        youtubeUrl: z.string().nullable().optional(),
-        initialCode: z.string().optional(),
-        solutionCode: z.string().optional(),
-        tests: z.string().optional(),
-        order: z.number(),
-      }))
+    lessons: z.array(z.object({
+      id: z.string(),
+      type: z.enum(['intro', 'quiz', 'challenge']),
+      title: z.string().min(1, 'Lesson title is required'),
+      contentMarkdown: z.string().optional(),
+      youtubeUrl: z.string().nullable().optional(),
+      initialCode: z.string().nullable().optional(),
+      solutionCode: z.string().nullable().optional(),
+      tests: z.string().nullable().optional(),
+      order: z.number(),
+    }))
   }))
 })
 

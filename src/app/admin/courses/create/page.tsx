@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import ImageUpload from '@/components/ImageUpload'
 
@@ -13,7 +14,7 @@ interface User {
 }
 
 export default function CreateCourse() {
-  const [user, setUser] = useState<User | null>(null)
+  const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [message, setMessage] = useState('')
@@ -33,24 +34,12 @@ export default function CreateCourse() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-
-    if (!token || !userData) {
+    if (status === 'loading') return
+    if (!session || session.user.role !== 'ADMIN') {
       router.push('/admin/login')
       return
     }
-
-    try {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
-    } catch (error) {
-      console.error('Error parsing user data:', error)
-      router.push('/admin/login')
-      return
-    }
-  }, [router])
+  }, [router, session, status])
 
   const handleThumbnailSelect = async (file: File | null) => {
     setThumbnailError(null)
@@ -64,27 +53,68 @@ export default function CreateCourse() {
     setThumbnailFile(file)
     
     try {
-      const token = localStorage.getItem('token')
-      const formData = new FormData()
-      formData.append('file', file)
+      console.log('Starting file upload:', { name: file.name, type: file.type, size: file.size })
+      
+      // Convert file to base64
+      console.log('Converting file to base64...')
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+      
+      console.log('Base64 conversion complete, length:', base64.length)
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
-      const response = await fetch('/api/upload/thumbnail', {
+      // Send file as base64 JSON
+      console.log('Sending request to /api/upload/base64')
+      const response = await fetch('/api/upload/base64', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
-        body: formData
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          fileData: base64
+        }),
+        signal: controller.signal
       })
+      
+      console.log('Response received:', { status: response.status, ok: response.ok })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Upload failed:', response.status, errorText)
+        setThumbnailError(`Upload failed: ${response.status} ${errorText}`)
+        return
+      }
 
       const data = await response.json()
 
-      if (response.ok) {
+      if (data.success) {
         setCourseThumbnail(data.url)
+        setThumbnailError(null)
       } else {
         setThumbnailError(data.error || 'Failed to upload thumbnail')
       }
     } catch (error) {
-      setThumbnailError('Failed to upload thumbnail')
+      console.error('Upload error:', error)
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          setThumbnailError('Upload timed out. Please try again.')
+        } else {
+          setThumbnailError(`Upload failed: ${error.message}`)
+        }
+      } else {
+        setThumbnailError('Failed to upload thumbnail')
+      }
     }
   }
 
@@ -107,13 +137,10 @@ export default function CreateCourse() {
     setMessage('')
 
     try {
-      const token = localStorage.getItem('token')
-      
       const response = await fetch('/api/courses', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           title: courseTitle,
@@ -148,12 +175,22 @@ export default function CreateCourse() {
     }
   }
 
-  if (!user) {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-gray-400">Redirecting to login...</p>
         </div>
       </div>
     )
@@ -175,7 +212,7 @@ export default function CreateCourse() {
               </div>
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {user.email}
+                  {session.user.email}
                 </span>
                 <Link
                   href="/admin/courses"
