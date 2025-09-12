@@ -87,10 +87,10 @@ export default async function Home() {
             {/* Pricing Banner */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-2xl mx-auto mb-12">
               <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-                One-time payment - 3 months access - Unlimited learning
+              Login and get premium access for $19.99
               </h3>
               <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                Login and get premium access for $19.99
+              Unlimited learning
               </p>
               <Link
                 href="/courses"
