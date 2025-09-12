@@ -1,6 +1,37 @@
 import Link from 'next/link'
 
-export default function Home() {
+interface Course {
+  id: string
+  title: string
+  language: string
+  goals: string
+  level: string
+  access: string
+  thumbnail: string | null
+  moduleCount: number
+  totalLessons: number
+}
+
+async function getCourses(): Promise<Course[]> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/courses/public`, {
+      cache: 'no-store'
+    })
+    
+    if (!response.ok) {
+      return []
+    }
+    
+    const data = await response.json()
+    return data.courses || []
+  } catch (error) {
+    console.error('Error fetching courses:', error)
+    return []
+  }
+}
+
+export default async function Home() {
+  const courses = await getCourses()
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Header */}
@@ -79,68 +110,69 @@ export default function Home() {
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* Solidity Fundamentals Course */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                <div className="w-12 h-12 bg-yellow-500 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-2xl">🔧</span>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-                  Solidity Fundamentals
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Learn the basics of Solidity and smart contract development
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Beginner Level
-                  </span>
-                  <span className="text-sm font-medium text-yellow-500">
-                    Free Access
-                  </span>
-                </div>
-              </div>
+              {courses.length > 0 ? (
+                courses.map((course) => {
+                  const getCourseIcon = (title: string) => {
+                    if (title.toLowerCase().includes('solidity')) return '🔧'
+                    if (title.toLowerCase().includes('security')) return '🔒'
+                    if (title.toLowerCase().includes('defi')) return '📈'
+                    if (title.toLowerCase().includes('nft')) return '🎨'
+                    return '💻'
+                  }
 
-              {/* Security Patterns Course */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                <div className="w-12 h-12 bg-yellow-500 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-2xl">🔒</span>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-                  Security Patterns
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Master security best practices for smart contracts
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Intermediate Level
-                  </span>
-                  <span className="text-sm font-medium text-yellow-500">
-                    Premium Access
-                  </span>
-                </div>
-              </div>
+                  const getLevelColor = (level: string) => {
+                    switch (level.toLowerCase()) {
+                      case 'beginner':
+                        return 'text-green-600 dark:text-green-400'
+                      case 'intermediate':
+                        return 'text-yellow-600 dark:text-yellow-400'
+                      case 'advanced':
+                        return 'text-red-600 dark:text-red-400'
+                      default:
+                        return 'text-gray-600 dark:text-gray-400'
+                    }
+                  }
 
-              {/* Advanced DeFi Course */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                <div className="w-12 h-12 bg-yellow-500 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-2xl">📈</span>
+                  const getAccessColor = (access: string) => {
+                    return access.toLowerCase() === 'free' 
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-yellow-600 dark:text-yellow-400'
+                  }
+
+                  return (
+                    <Link key={course.id} href={`/courses/${course.id}`}>
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer">
+                        <div className="w-12 h-12 bg-yellow-500 rounded-lg mb-4 flex items-center justify-center">
+                          <span className="text-2xl">{getCourseIcon(course.title)}</span>
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+                          {course.title}
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                          {course.goals}
+                        </p>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`text-sm font-medium ${getLevelColor(course.level)}`}>
+                            {course.level}
+                          </span>
+                          <span className={`text-sm font-medium ${getAccessColor(course.access)}`}>
+                            {course.access}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {course.moduleCount} modules • {course.totalLessons} lessons
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No courses available at the moment. Check back soon!
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-                  Advanced DeFi
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Build complex DeFi protocols and yield strategies
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Advanced Level
-                  </span>
-                  <span className="text-sm font-medium text-yellow-500">
-                    Premium Access
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </section>
