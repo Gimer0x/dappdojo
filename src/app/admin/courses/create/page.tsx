@@ -50,48 +50,103 @@ export default function CreateCourse() {
       return
     }
 
+    // Check file size before processing (5MB limit)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      setThumbnailError('File size must be less than 5MB')
+      return
+    }
+    
+    // Check if file is empty
+    if (file.size === 0) {
+      setThumbnailError('File is empty')
+      return
+    }
+    
+    // Validate file type more strictly
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
+    if (!allowedTypes.includes(file.type)) {
+      setThumbnailError('Only JPG and PNG images are allowed')
+      return
+    }
+    
+    // Check if file is accessible
+    if (!file.name || file.name.trim() === '') {
+      setThumbnailError('Invalid file name')
+      return
+    }
+
     setThumbnailFile(file)
     
     try {
-      console.log('Starting file upload:', { name: file.name, type: file.type, size: file.size })
-      
       // Convert file to base64
-      console.log('Converting file to base64...')
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = reject
+        
+        // Set up timeout for FileReader
+        const readerTimeout = setTimeout(() => {
+          reader.abort()
+          reject(new Error('File reading timed out'))
+        }, 10000)
+        
+        reader.onload = () => {
+          clearTimeout(readerTimeout)
+          const result = reader.result as string
+          if (!result || result.length === 0) {
+            reject(new Error('File reading resulted in empty data'))
+            return
+          }
+          resolve(result)
+        }
+        
+        reader.onerror = (error) => {
+          clearTimeout(readerTimeout)
+          reject(new Error(`Failed to read file: ${error.type || 'Unknown error'}`))
+        }
+        
+        reader.onabort = () => {
+          clearTimeout(readerTimeout)
+          reject(new Error('File reading was aborted'))
+        }
+        
         reader.readAsDataURL(file)
       })
       
-      console.log('Base64 conversion complete, length:', base64.length)
-      
       // Add timeout to prevent hanging
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-      // Send file as base64 JSON
-      console.log('Sending request to /api/upload/base64')
-      const response = await fetch('/api/upload/base64', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileType: file.type,
-          fileData: base64
-        }),
-        signal: controller.signal
-      })
-      
-      console.log('Response received:', { status: response.status, ok: response.ok })
+      // Try base64 upload first, fallback to FormData if needed
+      let response: Response
+      try {
+        response = await fetch('/api/upload/base64', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+            fileType: file.type,
+            fileData: base64
+          }),
+          signal: controller.signal
+        })
+      } catch (base64Error) {
+        // Fallback to FormData upload
+        const formData = new FormData()
+        formData.append('file', file)
+        
+        response = await fetch('/api/upload/simple', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        })
+      }
 
       clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('Upload failed:', response.status, errorText)
         setThumbnailError(`Upload failed: ${response.status} ${errorText}`)
         return
       }
@@ -105,7 +160,6 @@ export default function CreateCourse() {
         setThumbnailError(data.error || 'Failed to upload thumbnail')
       }
     } catch (error) {
-      console.error('Upload error:', error)
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           setThumbnailError('Upload timed out. Please try again.')
@@ -113,7 +167,7 @@ export default function CreateCourse() {
           setThumbnailError(`Upload failed: ${error.message}`)
         }
       } else {
-        setThumbnailError('Failed to upload thumbnail')
+        setThumbnailError('Upload failed. Please try again.')
       }
     }
   }
