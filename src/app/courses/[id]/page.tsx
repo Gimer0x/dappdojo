@@ -68,14 +68,8 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
           const allModuleIds = new Set(courseData.modules.map(module => module.id))
           setCollapsedModules(allModuleIds)
           
-          // Mock some completed lessons (first lesson of each module)
-          const mockCompletedLessons = new Set<string>()
-          courseData.modules.forEach(module => {
-            if (module.lessons.length > 0) {
-              mockCompletedLessons.add(module.lessons[0].id)
-            }
-          })
-          setCompletedLessons(mockCompletedLessons)
+          // Initialize empty completion state (no lessons completed by default)
+          setCompletedLessons(new Set())
         }
       } catch (error) {
         console.error('Error fetching course:', error)
@@ -96,6 +90,13 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       newCollapsed.add(moduleId)
     }
     setCollapsedModules(newCollapsed)
+  }
+
+  const collapseAllModules = () => {
+    if (course) {
+      const allModuleIds = new Set(course.modules.map(module => module.id))
+      setCollapsedModules(allModuleIds)
+    }
   }
 
   if (loading) {
@@ -241,9 +242,17 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
         {/* Modules Section */}
         <section className="py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-8">
-              Course Modules
-            </h2>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                Course Modules
+              </h2>
+              <button
+                onClick={collapseAllModules}
+                className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Collapse All
+              </button>
+            </div>
             
             <div className="space-y-4">
               {course.modules.map((module, index) => (
@@ -287,22 +296,16 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                                   ? 'bg-green-500' 
                                   : 'bg-gray-300 dark:bg-gray-600'
                               }`}>
-                                {isCompleted ? (
-                                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                  </svg>
-                                ) : (
-                                  <span className="text-xs text-gray-600 dark:text-gray-300">
-                                    {lessonIndex + 1}
-                                  </span>
-                                )}
+                                <span className={`text-xs ${
+                                  isCompleted 
+                                    ? 'text-white' 
+                                    : 'text-gray-600 dark:text-gray-300'
+                                }`}>
+                                  {lessonIndex + 1}
+                                </span>
                               </div>
                               <div className="flex-1">
-                                <span className={`text-sm font-medium ${
-                                  isCompleted 
-                                    ? 'text-green-600 dark:text-green-400 line-through' 
-                                    : 'text-gray-800 dark:text-white'
-                                }`}>
+                                <span className="text-sm font-medium text-gray-800 dark:text-white">
                                   {lesson.title}
                                 </span>
                                 <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 capitalize">
