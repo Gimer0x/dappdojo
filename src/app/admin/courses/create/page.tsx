@@ -298,10 +298,12 @@ export default function CreateCourse() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="course-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Course Title *
                     </label>
                     <input
+                      id="course-title"
+                      name="course-title"
                       type="text"
                       value={courseTitle}
                       onChange={(e) => setCourseTitle(e.target.value)}
@@ -312,10 +314,12 @@ export default function CreateCourse() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="course-language" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Programming Language
                     </label>
                     <select
+                      id="course-language"
+                      name="course-language"
                       value={courseLanguage}
                       onChange={(e) => setCourseLanguage(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-600 dark:text-white"
@@ -329,10 +333,12 @@ export default function CreateCourse() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="course-level" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Level
                     </label>
                     <select
+                      id="course-level"
+                      name="course-level"
                       value={courseLevel}
                       onChange={(e) => setCourseLevel(e.target.value as 'beginner' | 'intermediate' | 'advanced')}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-600 dark:text-white"
@@ -344,10 +350,12 @@ export default function CreateCourse() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="course-access" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Access Type
                     </label>
                     <select
+                      id="course-access"
+                      name="course-access"
                       value={courseAccess}
                       onChange={(e) => setCourseAccess(e.target.value as 'free' | 'paid')}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-600 dark:text-white"
@@ -358,10 +366,12 @@ export default function CreateCourse() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="course-status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Status
                     </label>
                     <select
+                      id="course-status"
+                      name="course-status"
                       value={courseStatus}
                       onChange={(e) => setCourseStatus(e.target.value as 'active' | 'deactivated')}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-yellow-500 focus:border-yellow-500 dark:bg-gray-600 dark:text-white"
@@ -372,10 +382,12 @@ export default function CreateCourse() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="course-goals" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Course Goals *
                     </label>
                     <textarea
+                      id="course-goals"
+                      name="course-goals"
                       value={courseGoals}
                       onChange={(e) => setCourseGoals(e.target.value)}
                       rows={4}

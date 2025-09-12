@@ -10,20 +10,18 @@ export function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
   
-  // Content Security Policy
-  response.headers.set(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self';"
-  )
-
-  // Prevent clickjacking
-  response.headers.set('X-Frame-Options', 'DENY')
+  // Content Security Policy - More permissive for development
+  const isDevelopment = process.env.NODE_ENV === 'development'
+  const cspDirective = isDevelopment
+    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss:;"
+    : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self';"
   
-  // Prevent MIME type sniffing
-  response.headers.set('X-Content-Type-Options', 'nosniff')
+  // Debug logging removed for cleaner terminal output
   
-  // XSS Protection
-  response.headers.set('X-XSS-Protection', '1; mode=block')
+  // Set CSP headers with cache control
+  response.headers.set('Content-Security-Policy', cspDirective)
+  response.headers.set('X-Content-Security-Policy', cspDirective) // For older browsers
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate') // Prevent caching
 
   // Rate limiting headers (basic)
   const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
@@ -38,10 +36,9 @@ export const config = {
     /*
      * Match all request paths except for the ones starting with:
      * - api (API routes)
-     * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/image|favicon.ico).*)',
   ],
 }

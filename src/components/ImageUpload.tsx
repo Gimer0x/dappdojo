@@ -88,6 +88,8 @@ export default function ImageUpload({
       >
         <input
           ref={fileInputRef}
+          id="image-upload"
+          name="image-upload"
           type="file"
           accept="image/jpeg,image/jpg,image/png"
           onChange={handleFileInput}

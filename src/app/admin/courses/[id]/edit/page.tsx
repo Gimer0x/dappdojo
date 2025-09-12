@@ -912,10 +912,12 @@ export default function EditCourse() {
                       <div className="p-3">
                         <div className="space-y-2 mb-4">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label htmlFor="edit-course-title" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Course Title
                         </label>
                         <input
+                          id="edit-course-title"
+                          name="edit-course-title"
                           type="text"
                           value={courseTitle}
                           onChange={(e) => {
@@ -1141,6 +1143,8 @@ export default function EditCourse() {
                                 <div className="p-2 border-b border-gray-200 dark:border-gray-600">
                                   <div className="space-y-1">
                                     <input
+                                      id={`module-title-${module.id}`}
+                                      name={`module-title-${module.id}`}
                                       type="text"
                                       value={module.title}
                                       onChange={(e) => updateModule(module.id, 'title', e.target.value)}
@@ -1148,6 +1152,8 @@ export default function EditCourse() {
                                       placeholder="Module title"
                                     />
                                     <input
+                                      id={`module-description-${module.id}`}
+                                      name={`module-description-${module.id}`}
                                       type="text"
                                       value={module.description}
                                       onChange={(e) => updateModule(module.id, 'description', e.target.value)}
@@ -1276,10 +1282,12 @@ export default function EditCourse() {
                       <div className="px-4 py-2 border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
                         <div className="flex items-center justify-between space-x-4">
                           <div className="flex items-center space-x-3 flex-1">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                            <label htmlFor="lesson-title" className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                               Lesson Title:
                             </label>
                             <input
+                              id="lesson-title"
+                              name="lesson-title"
                               type="text"
                               value={getSelectedLesson()?.title || ''}
                               onChange={(e) => {
