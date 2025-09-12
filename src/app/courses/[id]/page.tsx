@@ -289,24 +289,24 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                   // Not logged users
                   if (isFirstModule) {
                     moduleAccess = 'view-only'
-                    showUpgradeLabel = false
+                    showUpgradeLabel = false // No "Upgrade" on first module for non-logged users
                   } else {
                     moduleAccess = 'locked'
-                    showUpgradeLabel = true
+                    showUpgradeLabel = true // Show "Upgrade" on other modules
                   }
                 } else if (!isPremium) {
                   // Logged in non-premium users
                   if (isFirstModule) {
                     moduleAccess = 'full'
-                    showUpgradeLabel = true
+                    showUpgradeLabel = false // No "Upgrade" on first module for logged users
                   } else {
                     moduleAccess = 'locked'
-                    showUpgradeLabel = true
+                    showUpgradeLabel = true // Show "Upgrade" on other modules
                   }
                 } else {
                   // Premium users
                   moduleAccess = 'full'
-                  showUpgradeLabel = false
+                  showUpgradeLabel = false // No labels for premium users
                 }
                 
                 const isLocked = moduleAccess === 'locked'

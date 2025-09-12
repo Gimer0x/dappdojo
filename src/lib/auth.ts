@@ -54,11 +54,46 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google') {
+        try {
+          // Check if user exists in database
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! }
+          })
+
+          if (!existingUser) {
+            // Create new user for Google OAuth
+            await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name,
+                photoUrl: user.image,
+                role: 'STUDENT',
+                isPremium: false,
+              }
+            })
+          }
+          return true
+        } catch (error) {
+          console.error('Error in signIn callback:', error)
+          return false
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, account }) {
       if (user) {
-        token.id = user.id
-        token.role = (user as any).role || 'STUDENT'
-        token.isPremium = (user as any).isPremium || false
+        // Get user from database to ensure we have the latest data
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email! }
+        })
+        
+        if (dbUser) {
+          token.id = dbUser.id
+          token.role = dbUser.role
+          token.isPremium = dbUser.isPremium
+        }
       }
       return token
     },
