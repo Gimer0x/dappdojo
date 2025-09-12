@@ -147,11 +147,8 @@ export default async function Home() {
                           </div>
                         </div>
                         
-                        {/* Price and Start Course Button */}
-                        <div className="flex items-center justify-between">
-                          <span className={`text-lg font-bold ${getAccessColor(course.access)}`}>
-                            {course.access === 'FREE' ? 'Free' : '$19.99'}
-                          </span>
+                        {/* Start Course Button */}
+                        <div className="flex justify-end">
                           <Link href={`/courses/${course.id}`}>
                             <button className="bg-yellow-500 text-black px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-colors">
                               Start Course

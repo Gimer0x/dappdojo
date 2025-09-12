@@ -55,8 +55,6 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set())
   const { data: session, status } = useSession()
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set()) // Mock completion status
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true)
-  const [lastScrollY, setLastScrollY] = useState(0)
 
   useEffect(() => {
     async function fetchCourse() {
@@ -85,25 +83,6 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     fetchCourse()
   }, [params])
 
-  // Scroll event listener for header visibility
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        // Scrolling down and past 100px
-        setIsHeaderVisible(false)
-      } else {
-        // Scrolling up
-        setIsHeaderVisible(true)
-      }
-      
-      setLastScrollY(currentScrollY)
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [lastScrollY])
 
   const toggleModule = (moduleId: string) => {
     const newCollapsed = new Set(collapsedModules)
@@ -159,8 +138,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Header */}
-      {isHeaderVisible && (
-        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 fixed w-full top-0 z-50">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -204,10 +182,9 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
           </div>
         </div>
       </header>
-      )}
 
       {/* Main Content */}
-      <main className="pt-16">
+      <main>
         {/* Course Header */}
         <section className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
